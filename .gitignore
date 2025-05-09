@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtualenv
+venv/
+.env
+
+# SQLite / Postgres dump
+*.db
+*.sql
+
+# VSCode / Mac 特有檔案
+.vscode/
+.DS_Store
+
