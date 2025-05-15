@@ -1,9 +1,9 @@
-from model import db
-from model import User
-from model import UserGroup
-from model import Group
-from model import Task
-from model import Assignment
+from db.model import db
+from db.model import User
+from db.model import UserGroup
+from db.model import Group
+from db.model import Task
+from db.model import Assignment
 
 # User CRUD operations
 # Create

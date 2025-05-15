@@ -4,7 +4,7 @@ from flask import Flask
 from flask_cors import CORS
 from register.config import Config                     
 from register.routes.auth import auth_bp               
-from backend.db.model import db                                    
+from db.database import db                                    
 from etcd.etcd_client import register_to_etcd            
 from etcd.etcd_config import get_database_url, get_jwt_secret  
 

@@ -6,12 +6,6 @@ import enum
 
 db = SQLAlchemy()
 
-def create_app():
-    app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///demo.db'  # 或改為 PostgreSQL 連線字串
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(app)
-    return app
 
 # 任務狀態列舉
 class TaskStatus(enum.Enum):
@@ -21,7 +15,7 @@ class TaskStatus(enum.Enum):
 
 # 使用者模型
 class User(db.Model):
-    __tablename__ = 'user'
+    __tablename__ = 'users'
 
     user_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), nullable=False)
@@ -38,7 +32,7 @@ class User(db.Model):
 
 # 群組模型
 class Group(db.Model):
-    __tablename__ = 'group'
+    __tablename__ = 'groups'
 
     group_id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
@@ -52,8 +46,8 @@ class Group(db.Model):
 class UserGroup(db.Model):
     __tablename__ = 'user_group'
 
-    username = db.Column(db.String(50), db.ForeignKey('user.username'), primary_key=True)
-    group_id = db.Column(db.Integer, db.ForeignKey('group.group_id'), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id'), primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('groups.group_id'), primary_key=True)
 
     # 關聯
     user = db.relationship('User', back_populates='user_groups')
@@ -67,7 +61,7 @@ class Task(db.Model):
     title = db.Column(db.String(255), nullable=False)
     status = db.Column(db.Enum(TaskStatus), default=TaskStatus.pending, nullable=False)
     end_date = db.Column(db.DateTime)
-    group_id = db.Column(db.Integer, db.ForeignKey('group.group_id'))
+    group_id = db.Column(db.Integer, db.ForeignKey('groups.group_id'))
 
     # 關聯
     group = db.relationship('Group', back_populates='tasks')
@@ -78,7 +72,7 @@ class Assignment(db.Model):
     __tablename__ = 'assignment'
 
     task_id = db.Column(db.Integer, db.ForeignKey('task.task_id',ondelete='CASCADE'), primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.user_id',ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.user_id',ondelete='CASCADE'))
 
     # 關聯
     task = db.relationship('Task', back_populates='assignment')
