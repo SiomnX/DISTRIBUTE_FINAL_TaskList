@@ -12,6 +12,9 @@ class Config:
     # Flask 執行時要使用的 port（預設 5000）
     PORT = int(os.getenv("FLASK_RUN_PORT", 5000))
 
+    SERVICE_NAME = os.getenv("SERVICE_NAME", "register")  # 預設就是 register
+    
+
     # 關閉 SQLAlchemy 的物件變更追蹤功能（節省記憶體用）
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

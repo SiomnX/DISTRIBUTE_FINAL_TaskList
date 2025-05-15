@@ -14,11 +14,10 @@ def create_app():
 
     # 使用 config.py 的設定值作為基礎
     app.config.from_object(Config)
-
+    
     # 使用 etcd 拿到的參數動態設定資料庫連線與 JWT 金鑰
     app.config['SQLALCHEMY_DATABASE_URI'] = get_database_url()
     app.config['JWT_SECRET'] = get_jwt_secret()
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = Config.SQLALCHEMY_TRACK_MODIFICATIONS
 
     # 允許跨來源請求（跨網域）
     CORS(app)
@@ -28,8 +27,8 @@ def create_app():
 
     # 在 app context 中註冊服務並建立資料表
     with app.app_context():
-        service_name = os.getenv("SERVICE_NAME", "user_service")      # 從環境變數讀取服務名稱
-        port = int(os.getenv("SERVICE_PORT", 5000))                   # 服務使用的 port
+        service_name = app.config["SERVICE_NAME"]                     # 從環境變數讀取服務名稱
+        port = app.config["PORT"]                                     # 服務使用的 port
         ip = socket.gethostbyname(socket.gethostname())               # 自動取得本機 IP（在容器中會是內網 IP）
 
         # 將服務註冊進 etcd（用於服務發現）

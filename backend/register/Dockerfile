@@ -5,7 +5,7 @@ WORKDIR /app
 #將本地的backend搬遷到container的app
 COPY backend/ /app
 #安裝套件
-RUN pip install --no-cache-dir -r register/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 #Python從/app目錄當作模組根目錄開始找
 ENV PYTHONPATH=/app
