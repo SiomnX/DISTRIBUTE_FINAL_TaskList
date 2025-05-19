@@ -9,7 +9,9 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 複製其餘程式檔案到工作目錄
-COPY . .
+COPY backend/task_assignment/ .
+COPY backend/etcd/ ./etcd
+
 
 # 建立一個非 root 用戶運行應用程式
 # 這樣做是為了安全性，避免容器以 root 身份運行
