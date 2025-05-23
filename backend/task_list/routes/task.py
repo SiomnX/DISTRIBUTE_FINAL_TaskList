@@ -44,10 +44,9 @@ def get_task_route(task_id):
 def update_task_route(task_id):
     data = request.get_json()
     title = data.get('title')
-    status = data.get('status')
     end_date = data.get('end_date')
 
-    task = update_task(task_id, title=title, status=status, end_date=end_date)
+    task = update_task(task_id, title=title, end_date=end_date)
     if not task:
         return jsonify({'error': 'Task not found'}), 404
 
