@@ -23,15 +23,15 @@ def delete():
     return jsonify({'message': 'Group deleteed successfully'}), 201
 
 @groups_bp.route('/add_user', methods=['POST'])
-@jwt_required()
+#@jwt_required()
 def add_user():
     data = request.json
-    user_group = add_user_to_group(data['username'],data['group_id'])
+    user_group = add_user_to_group(data['user_id'],data['group_id'])
     return jsonify({'message': 'User added successfully'}), 201
 
 @groups_bp.route('/remove_user', methods=['DELETE'])
-@jwt_required()
+#@jwt_required()
 def remove_user():
     data = request.json
-    remove_user_from_group(data['username'],data['group_id'])
+    remove_user_from_group(data['user_id'],data['group_id'])
     return jsonify({'message': 'User removeed successfully'}), 201
