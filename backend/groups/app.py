@@ -2,6 +2,7 @@ import os
 import socket
 from flask import Flask
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 from groups.config import Config
 from groups.routes.groups import groups_bp
 from db.database import db
@@ -17,10 +18,12 @@ def create_app():
 
     # 使用 etcd 拿到的參數動態設定資料庫連線與 JWT 金鑰
     app.config['SQLALCHEMY_DATABASE_URI'] = get_database_url()
-    app.config['JWT_SECRET'] = get_jwt_secret()
+    app.config['JWT_SECRET_KEY'] = get_jwt_secret()
 
     # 允許跨來源請求（跨網域）
     CORS(app)
+
+    JWTManager(app)
 
     # 初始化 SQLAlchemy 資料庫
     db.init_app(app)

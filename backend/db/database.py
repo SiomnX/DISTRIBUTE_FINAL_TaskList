@@ -69,14 +69,14 @@ def delete_group(group_id):
         db.session.delete(group)
         db.session.commit()
 
-def add_user_to_group(username, group_id):
-    user_group = UserGroup(username=username, group_id=group_id)
+def add_user_to_group(user_id, group_id):
+    user_group = UserGroup(user_id=user_id, group_id=group_id)
     db.session.add(user_group)
     db.session.commit()
     return user_group
 
-def remove_user_from_group(username, group_id):
-    user_group = UserGroup.query.filter_by(username=username, group_id=group_id).first()
+def remove_user_from_group(user_id, group_id):
+    user_group = UserGroup.query.filter_by(user_id=user_id, group_id=group_id).first()
     if user_group:
         db.session.delete(user_group)
         db.session.commit()
