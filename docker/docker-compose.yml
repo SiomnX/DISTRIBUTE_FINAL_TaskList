@@ -71,6 +71,23 @@ services:
     networks:
       - etcd-net
 
+  task_list:
+    build:
+      context: ..
+      dockerfile: backend/task_list/Dockerfile
+    ports:
+      - "5003:5003"
+    environment:
+      - SERVICE_NAME=task_list
+      - PORT=5003
+      - DATABASE_URL=postgresql://user:password@db:5432/tasklistdb
+      - ETCD_HOST=etcd1
+      - ETCD_PORT=2379
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - etcd-net
 
   test:
     build:
