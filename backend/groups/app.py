@@ -18,7 +18,7 @@ def create_app():
 
     # 使用 etcd 拿到的參數動態設定資料庫連線與 JWT 金鑰
     app.config['SQLALCHEMY_DATABASE_URI'] = get_database_url()
-    app.config['JWT_SECRET'] = get_jwt_secret()
+    app.config['JWT_SECRET_KEY'] = get_jwt_secret()
 
     # 允許跨來源請求（跨網域）
     CORS(app)
