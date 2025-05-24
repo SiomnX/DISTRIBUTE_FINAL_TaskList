@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SocketIO 測試</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>SocketIO 測試頁面</h1>
+    <script>
+        const socket = io('http://localhost:5000');
+        socket.on('connect', function() {
+            console.log('已連線到 SocketIO 伺服器');
+        });
+        socket.on('create_task', function(data) {
+            alert('收到 create_task 通知：' + JSON.stringify(data));
+        });
+        socket.on('update_task_status', function(data) {
+            alert('收到 update_task_status 通知：' + JSON.stringify(data));
+        });
+        socket.on('delete_task', function(data) {
+            alert('收到 delete_task 通知：' + JSON.stringify(data));
+        });
+    </script>
+</body>
+</html>
