@@ -1,8 +1,10 @@
 import os
 import socket
+
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+
 from groups.config import Config
 from groups.routes.groups import groups_bp
 from db.database import db

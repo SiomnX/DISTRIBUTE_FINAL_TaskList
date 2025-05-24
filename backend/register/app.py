@@ -1,12 +1,14 @@
 import os
 import socket
+
 from flask import Flask
 from flask_cors import CORS
-from register.config import Config                     
-from register.routes.auth import auth_bp               
-from db.database import db                                    
-from etcd.etcd_client import register_to_etcd            
-from etcd.etcd_config import get_database_url, get_jwt_secret  
+
+from register.config import Config
+from register.routes.auth import auth_bp
+from db.database import db
+from etcd.etcd_client import register_to_etcd
+from etcd.etcd_config import get_database_url, get_jwt_secret
 
 
 # 建立並設定好 Flask 應用程式

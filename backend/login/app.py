@@ -1,14 +1,15 @@
-# DISTRIBUTE_FINAL\backend\login\app.py
 import socket
+
 from flask import Flask
 from flask_cors import CORS
-from etcd.etcd_client import register_to_etcd
 from flask_jwt_extended import JWTManager
-from db.database import db
-from login.routes.login import login_bp
+
 from login.config import Config
+from login.routes.login import login_bp
 from login import jwt_setup as jwt
-from etcd.etcd_config import get_jwt_secret,get_database_url
+from db.database import db
+from etcd.etcd_client import register_to_etcd
+from etcd.etcd_config import get_jwt_secret, get_database_url
 
 def create_app():
     app = Flask(__name__)
