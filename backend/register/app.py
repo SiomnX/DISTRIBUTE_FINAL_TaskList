@@ -13,16 +13,11 @@ from etcd.etcd_config import get_database_url, get_jwt_secret
 def create_app():
     app = Flask(__name__)
 
-    app.config["JWT_SECRET_KEY"] = "super-secret-jwt"
-
     # 使用 config.py 的設定值作為基礎
     app.config.from_object(Config)
     
     # 使用 etcd 拿到的參數動態設定資料庫連線與 JWT 金鑰
     app.config['SQLALCHEMY_DATABASE_URI'] = get_database_url()
-    etcd_jwt = get_jwt_secret()
-    if etcd_jwt:
-        app.config["JWT_SECRET_KEY"] = etcd_jwt
 
     # 允許跨來源請求（跨網域）
     CORS(app)
@@ -39,8 +34,6 @@ def create_app():
         # 將服務註冊進 etcd（用於服務發現）
         register_to_etcd(service_name=service_name, ip=ip, port=port)
 
-        # 根據 model 自動建立資料表（如果尚未建立）
-        db.create_all()
 
     # 註冊 Blueprint 處理 /auth 路由
     app.register_blueprint(auth_bp, url_prefix="/auth")
