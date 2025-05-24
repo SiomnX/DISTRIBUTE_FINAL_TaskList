@@ -32,6 +32,7 @@
 import os
 from urllib.parse import urlparse
 from etcd.etcd_config import get_database_url, get_jwt_secret
+from etcd.etcd_client import get_config
 
 class Config:
     """
@@ -51,4 +52,6 @@ class Config:
     DB_PASSWORD = _db_url.password
 
     # JWT
-    JWT_SECRET = get_jwt_secret()
+    #JWT_SECRET = get_jwt_secret()
+     # ★ 新增 JWT_SECRET ★
+    JWT_SECRET_KEY = get_config("/secrets/jwt_secret")

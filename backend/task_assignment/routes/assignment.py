@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from config import Config
 import psycopg2, requests
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 # flask  for app.py
 assignment_bp = Blueprint("assignment", __name__)
@@ -63,10 +64,12 @@ cursor = conn.cursor() # 建立cursor, 負責與db互動
 #     else:
 #         return jsonify ({"error": "Task already claimed or not found :("}),
 @assignment_bp.route("/claim", methods=["POST"])
+@jwt_required()  # 保护此路由，必须带有效 JWT
 def claim_task():
     data = request.get_json()
-    user_id = data.get("user_id")      # 前端要傳 "user_id"
+    #user_id = data.get("user_id")      # 前端要傳 "user_id"
     task_id = data.get("task_id")
+    user_id = get_jwt_identity()  # 从 JWT 拿到的身份（identity）
 
     if not user_id or not task_id:
         return jsonify({"error": "Missing user_id or task_id"}), 400
@@ -143,10 +146,12 @@ def claim_task():
 #         return jsonify({"error": "Task not in progress or not found!"})
 
 @assignment_bp.route("/cancel", methods=["POST"])
+@jwt_required()
 def cancel_task():
     data = request.get_json()
-    user_id = data.get("user_id")
+    #user_id = data.get("user_id")
     task_id = data.get("task_id")
+    user_id = get_jwt_identity()  # 从 JWT 拿到的身份（identity）
 
     if not user_id or not task_id:
         return jsonify({"error": "Missing user_id or task_id"}), 400
@@ -225,10 +230,12 @@ def get_in_progress_tasks():
     return jsonify(tasks)
 
 @assignment_bp.route("/assign", methods=["POST"])
+@jwt_required()
 def add_assignment():
     data = request.get_json()
-    user_id = data.get("user_id")
+    #user_id = data.get("user_id")
     task_id = data.get("task_id")
+    user_id = get_jwt_identity()
     if not user_id or not task_id:
         return jsonify({"error": "Missing user_id or task_id"}), 400
 
@@ -286,10 +293,12 @@ def add_assignment():
 
 
 @assignment_bp.route("/assign", methods=["DELETE"])
+@jwt_required()
 def remove_assignment():
     data = request.get_json()
-    user_id = data.get("user_id")
+    # user_id = data.get("user_id")
     task_id = data.get("task_id")
+    user_id = get_jwt_identity()
     if not user_id or not task_id:
         return jsonify({"error": "Missing user_id or task_id"}), 400
 
