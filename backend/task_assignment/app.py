@@ -1,16 +1,3 @@
-# from flask import Flask
-# from routes.assignment import assignment_bp
-# from config import SERVICE_PORT
-# from etcd.etcd_client import register_to_etcd
-
-
-# app = Flask(__name__)
-# app.register_blueprint(assignment_bp)
-
-
-# if __name__ == "__main__":
-    
-#     app.run(host="0.0.0.0", port=SERVICE_PORT)
 # app.py
 from flask import Flask, request, jsonify
 from routes.assignment import assignment_bp
@@ -18,6 +5,7 @@ from config import Config
 from etcd.etcd_client import register_to_etcd
 import socket
 from flask_jwt_extended import JWTManager
+from config import get_jwt_secret   
 
 
 def create_app():
