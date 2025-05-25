@@ -7,3 +7,4 @@ protobuf<4.0.0,>=3.20.0
 Flask-Cors==4.0.0
 flask-socketio
 flask_jwt_extended
+requests
