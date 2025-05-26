@@ -146,6 +146,9 @@ def delete_task(task_id):
                 "message": f"任務 {task_id} 已刪除！"
             }, namespace="/")
 
+def get_tasks_by_group(group_id):
+    return Task.query.filter_by(group_id=group_id).all()
+
 # =======================
 # Assignment CRUD
 # =======================

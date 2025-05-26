@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from db.database import create_task, get_task, update_task, delete_task, db
+from db.database import create_task, get_task, update_task, delete_task, db,get_tasks_by_group
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 task_bp = Blueprint('task_bp', __name__)
@@ -74,3 +74,18 @@ def delete_task_route(task_id):
         db.session.rollback()
         return jsonify({'error': f'Failed to delete task: {str(e)}'}), 500
 
+@task_bp.route('/group/<int:group_id>/tasks', methods=['GET'])
+@jwt_required()
+def get_tasks_by_group_route(group_id):
+    tasks = get_tasks_by_group(group_id)
+
+    result = []
+    for task in tasks:
+        result.append({
+            'id': task.task_id,
+            'title': task.title,
+            'status': task.status.value,
+            'end_date': task.end_date.isoformat() if task.end_date else None,
+        })
+
+    return jsonify(result), 200
