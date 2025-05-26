@@ -36,9 +36,7 @@ export default function UpdateTaskModal({ isOpen, onClose, task, onUpdate }: Pro
     const updatedTask: Task = {
       ...task,
       name,
-      dueDate,
-      currentOwner,
-      status,
+      dueDate
     }
     onUpdate(updatedTask)
     onClose()
@@ -71,28 +69,6 @@ export default function UpdateTaskModal({ isOpen, onClose, task, onUpdate }: Pro
               className="w-full rounded border px-3 py-2 text-sm"
               required
             />
-          </div>
-
-          <div>
-            <label className="block text-sm">負責人</label>
-            <input
-              value={currentOwner}
-              onChange={(e) => setCurrentOwner(e.target.value)}
-              className="w-full rounded border px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm">任務狀態</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="w-full rounded border px-3 py-2 text-sm"
-            >
-              <option value="待處理">待處理</option>
-              <option value="進行中">進行中</option>
-              <option value="已完成">已完成</option>
-            </select>
           </div>
 
           <div className="flex justify-end space-x-2">

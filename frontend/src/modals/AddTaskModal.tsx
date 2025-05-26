@@ -28,7 +28,7 @@ export default function AddTaskModal({ isOpen, onClose, onAdd }: Props) {
       name,
       dueDate,
       currentOwner: groupId,
-      status: '待處理',
+      status: "pending"
     }
 
     onAdd(newTask)

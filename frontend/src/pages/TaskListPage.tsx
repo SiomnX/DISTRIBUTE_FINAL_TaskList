@@ -19,14 +19,21 @@ export default function TaskPage() {
       name: '設計系統建立',
       dueDate: '2024-01-20',
       currentOwner: 'alex.dev',
-      status: '待處理',
+      status: 'pending',
     },
     {
       id: 'TSK002',
       name: '撰寫 API 文件',
       dueDate: '2024-01-25',
       currentOwner: '未指派',
-      status: '進行中',
+      status: 'in_process',
+    },
+    {
+      id: 'TSK003',
+      name: '測試',
+      dueDate: '2024-01-13',
+      currentOwner: '未指派',
+      status: 'completed',
     },
   ])
   // userTasks	使用者自己已接下的任務
@@ -49,7 +56,12 @@ export default function TaskPage() {
   // 確認接下任務
   const handleConfirmTask = () => {
     if (selectedTask) {
-      setUserTasks((prev) => [...prev, selectedTask])
+      const alreadySelected = userTasks.some(task => task.id === selectedTask.id)
+      if (alreadySelected) {
+        alert('你已接下此任務')
+      } else {
+        setUserTasks((prev) => [...prev, selectedTask])
+      }
       setModalOpen(false)
     }
   }
@@ -66,6 +78,47 @@ export default function TaskPage() {
     )
     setUpdateTaskModalOpen(false)
   }
+
+  const handleSubmitAllUserTasks = () => {
+    if (userTasks.length === 0) {
+      alert('你尚未選擇任何任務')
+      return
+    }
+
+    fetch('/api/submitTasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userTasks), // 一次送出多筆任務
+    })
+      .then((res) => {
+        if (res.ok) {
+          alert('成功送出任務 ✅')
+          setUserTasks([]) // 清空畫面
+          // 可選：重新載入任務列表
+          // fetchTasksFromServer()
+        } else {
+          alert('送出失敗 ❌')
+        }
+      })
+      .catch(() => {
+        alert('發生錯誤，請稍後再試')
+      })
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-purple-100 text-purple-400'
+      case 'in_process':
+        return 'bg-blue-100 text-blue-400'
+      case 'completed':
+        return 'bg-green-100 text-green-400'
+      default:
+        return 'bg-gray-400 text-gray-600'
+    }
+  }
+
+  
 
   return (
     <div className="p-6">
@@ -121,6 +174,10 @@ export default function TaskPage() {
                   <p className="text-sm text-gray-600">
                     截止日期：{task.dueDate} | 負責人：{task.currentOwner}
                   </p>
+                 <p className={`inline-block rounded px-2 py-0.5 text-xs text-white font-semibold ${getStatusColor(task.status)}`}>
+                  <span className={`h-3 w-3 rounded-sm ${getStatusColor(task.status).split(' ')[0]}`}></span>
+                  <span>{task.status}</span>
+                </p>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -166,7 +223,16 @@ export default function TaskPage() {
               </div>
             ))}
           </div>
-        </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => handleSubmitAllUserTasks()}
+                className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
+              >
+                一次送出
+              </button>
+            </div>
+          </div>
+        
       </div>
 
       {/* 確認接下任務的模態視窗 */}
