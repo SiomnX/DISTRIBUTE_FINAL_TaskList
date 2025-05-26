@@ -1,5 +1,10 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+
 from flask import Blueprint, request, jsonify
 from db.database import create_task, get_task, update_task, delete_task, db
+from db.model import Task
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 task_bp = Blueprint('task_bp', __name__)
@@ -73,4 +78,23 @@ def delete_task_route(task_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Failed to delete task: {str(e)}'}), 500
+
+# 根據 group 查詢任務
+@task_bp.route('/group/<int:group_id>', methods=['GET'])
+@jwt_required()
+def get_tasks_by_group(group_id):
+    from db.model import Task
+    tasks = Task.query.filter_by(group_id=group_id).all()
+
+    task_list = [
+        {
+            'id': task.task_id,
+            'title': task.title,
+            'status': task.status.value,
+            'end_date': task.end_date.isoformat() if task.end_date else None,
+            'group_id': task.group_id
+        }
+        for task in tasks
+    ]
+    return jsonify(task_list), 200
 

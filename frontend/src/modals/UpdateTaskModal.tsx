@@ -31,16 +31,55 @@ export default function UpdateTaskModal({ isOpen, onClose, task, onUpdate }: Pro
 
   if (!isOpen) return null
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const updatedTask: Task = {
-      ...task,
-      name,
-      dueDate
+  
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('請先登入')
+        return
+      }
+  
+      const res = await fetch(`http://localhost:5003/task/${task.id}`, {
+        method: 'PUT', // 如果你後端用 PATCH 就改成 'PATCH'
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: name,
+          end_date: dueDate
+        }),
+      })
+  
+      if (!res.ok) {
+        const errorText = await res.text()
+        console.error('更新任務失敗：', errorText)
+        alert(`更新任務失敗：\n${errorText}`)
+        return
+      }
+  
+      const data = await res.json()
+  
+      const updatedTask: Task = {
+        ...task,
+        name: data.title,
+        dueDate: data.end_date,
+        currentOwner: task.currentOwner,
+        status: data.status || task.status,
+      }
+  
+      onUpdate(updatedTask)
+      onClose()
+      alert('更新成功！')
+  
+    } catch (err) {
+      console.error('更新任務錯誤', err)
+      alert('伺服器錯誤，請稍後再試')
     }
-    onUpdate(updatedTask)
-    onClose()
   }
+  
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">

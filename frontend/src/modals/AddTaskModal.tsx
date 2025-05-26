@@ -18,24 +18,62 @@ interface Props {
 export default function AddTaskModal({ isOpen, onClose, onAdd }: Props) {
   const [name, setName] = useState('')
   const [dueDate, setDueDate] = useState('')
-  const groupId = 'GRP001' // 群組 ID 固定
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-
-    const newTask: Task = {
-      id: 'TSK' + Date.now(),
-      name,
-      dueDate,
-      currentOwner: groupId,
-      status: "pending"
-    }
-
-    onAdd(newTask)
-    onClose()
-  }
+  const groupId = '1' // 群組 ID 固定
 
   if (!isOpen) return null
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('請先登入')
+        return
+      }
+
+      const res = await fetch('http://localhost:5003/task', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: name,
+          end_date: dueDate,
+          group_id: parseInt(groupId),
+        }),
+      })
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        console.error('新增任務失敗：', errorText)
+        alert(`新增任務失敗：\n${errorText}`)
+        return
+      }
+      
+      const data = await res.json()
+
+      // 整理成 Task 格式
+      const newTask: Task = {
+        id: String(data.id), // 假設後端回傳 id
+        name: data.title,
+        dueDate: data.end_date,
+        currentOwner: groupId,
+        status: data.status || 'pending',
+      }
+
+      onAdd(newTask)
+      onClose()
+      setName('')
+      setDueDate('')
+      alert('任務新增成功！')
+
+    } catch (err) {
+      console.error('新增任務錯誤', err)
+      alert('伺服器錯誤，請稍後再試')
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
