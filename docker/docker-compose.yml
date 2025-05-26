@@ -205,6 +205,31 @@ services:
     networks:
       - etcd-net
 
+  task_assignment:
+    build:
+      context: ..
+      dockerfile: backend/task_assignment/Dockerfile
+    ports:
+      - "5007:5000"                # expose 5000 → host 5005
+    depends_on:
+      db:
+        condition: service_healthy
+      etcd1:
+        condition: service_started
+      etcd2:
+        condition: service_started
+      etcd3:
+        condition: service_started
+    environment:
+      - SERVICE_NAME=task_assignment
+      - PORT=5000
+      - ETCD_ENDPOINTS=etcd1:2379,etcd2:2379,etcd3:2379
+      - DATABASE_URI=postgresql://user:password@db:5432/tasklistdb
+      - TASKLIST_URL=http://tasklist:5002   # 其他服務在同一 network
+      - NOTIF_URL=http://notification:5003
+    networks:
+      - etcd-net
+
 volumes:
   pgdata:
   etcd1-data:
