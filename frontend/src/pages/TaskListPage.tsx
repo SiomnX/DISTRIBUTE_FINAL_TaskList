@@ -72,9 +72,41 @@ export default function TaskPage() {
   }
 
   // 刪除任務
-  const handleDeleteTask = (taskId: string) => {
-    setTasks((prev) => prev.filter((task) => task.id !== taskId))
+  const handleDeleteTask = async (taskId: string) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      alert('請先登入')
+      return
+    }
+  
+    if (!window.confirm('確定要刪除這個任務嗎？')) return
+  
+    try {
+      const res = await fetch(`http://localhost:5003/task/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+  
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(text)
+      }
+  
+      const data = await res.json()
+      console.log('刪除成功:', data)
+  
+      // 從畫面上移除該任務
+      setTasks((prev) => prev.filter((task) => task.id !== taskId))
+      alert('任務刪除成功')
+  
+    } catch (err) {
+      console.error('刪除任務失敗', err)
+      alert('刪除任務失敗，請稍後再試')
+    }
   }
+  
 
   // 更新任務
   const handleUpdateTask = (updatedTask: Task) => {
