@@ -1,4 +1,5 @@
-import { useState, FormEvent } from 'react'
+import { useState } from 'react'
+import type { FormEvent } from 'react';
 
 interface Props {
   isOpen: boolean
@@ -13,12 +14,36 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Prop
 
   if (!isOpen) return null
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    if (password !== confirm) return alert('兩次密碼不一致')
-    // TODO: 呼叫 register API
-    console.log('register', username, password)
+  const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault()
+
+  if (password !== confirm) {
+    alert('兩次輸入的密碼不一致')
+    return
   }
+
+  try {
+    const res = await fetch('http://localhost:5004/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, password })  // 根據你的後端格式來調整
+    })
+
+    if (!res.ok) {
+      alert('註冊失敗，帳號可能已存在')
+      return
+    }
+
+    alert('註冊成功，請登入！')
+    onClose()  // 關閉註冊 modal
+  } catch (err) {
+    console.error('註冊錯誤:', err)
+    alert('伺服器錯誤，請稍後再試')
+  }
+}
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
