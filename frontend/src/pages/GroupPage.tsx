@@ -4,7 +4,6 @@ import GroupModal from '../components/GroupModal';
 import { fetchWithAuth } from '../utils/fetchWithAuth'
 import { useNavigate } from 'react-router-dom'
 
-
 type Group = {
   name: string;
   id: number;
