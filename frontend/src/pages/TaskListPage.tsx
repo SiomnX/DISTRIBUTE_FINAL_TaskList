@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import TaskSelectionModal from '../modals/TaskSelectionModal'
 import UpdateTaskModal from '../modals/UpdateTaskModal'
 import AddTaskModal from '../modals/AddTaskModal'
+import { fetchWithAuth } from '../utils/fetchWithAuth'
 
 interface Task {
   id: string
@@ -119,31 +120,114 @@ export default function TaskPage() {
     setUpdateTaskModalOpen(false)
   }
 
-  const handleSubmitAllUserTasks = () => {
-    if (userTasks.length === 0) {
-      alert('你尚未選擇任何任務')
-      return
+  // 一次送出，claim 幾個任務
+  const handleSubmitAllUserTasks = async () => {
+  if (userTasks.length === 0) {
+    alert('你尚未選擇任何任務');
+    return;
+  }
+
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('請先登入');
+    return;
+  }
+
+  if (!window.confirm('確定要認領任務嗎？')) return;
+
+  const successes: string[] = [];
+  const failures: string[] = [];
+
+  for (const t of userTasks) {
+    try {
+      const res = await fetch('http://localhost:5007/claim', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ task_id: t.id }),
+      });
+
+      if (!res.ok) {
+      const text = await res.text();
+      console.warn(`❌ Claim failed for task ${t.id}:`, text);
+      failures.push(`❌ ${t.name} (${t.id})：${text}`);
+    } else {
+      const data = await res.json();
+      successes.push(`✅ ${t.name} (${t.id})`);
+    }
+  } catch (err: any) {
+    console.error(`❌ Network or logic error for task ${t.id}:`, err);
+    failures.push(`❌ ${t.name} (${t.id})：${err.message}`);
+  }
+}
+
+  // 清空選取列表
+  //setUserTasks([]);
+
+    // 顯示結果
+    if (successes.length > 0) {
+      alert("以下任務認領成功：\n" + successes.join('\n'));
     }
 
-    fetch('/api/submitTasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userTasks), // 一次送出多筆任務
-    })
-      .then((res) => {
-        if (res.ok) {
-          alert('成功送出任務 ✅')
-          setUserTasks([]) // 清空畫面
-          // 可選：重新載入任務列表
-          // fetchTasksFromServer()
-        } else {
-          alert('送出失敗 ❌')
-        }
-      })
-      .catch(() => {
-        alert('發生錯誤，請稍後再試')
-      })
+    if (failures.length > 0) {
+      alert("任務認領失敗：\n" + failures.join('\n'));
+    }
+
+    // 用後端回傳資料直接更新 userTasks，這樣畫面就會留你剛認領的任務
+    try {
+      const res = await fetchWithAuth('/my-tasks');
+      const updated = await res.json();
+      setUserTasks(
+        updated.map((task: any) => ({
+          id: String(task.task_id),
+          name: task.title,
+          dueDate: task.end_date?.slice(0, 10) || '',
+          currentOwner: '你自己',
+          status: task.status,
+        }))
+      );
+    } catch (err) {
+      console.error("載入我的任務失敗", err);
+    }
+}
+
+// 任務完成（call api 更新資料庫 status to completed）
+const handleCompleteTask = async (taskId: number) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('請先登入');
+    return;
   }
+
+  if (!window.confirm(`你確定已完成任務 ${taskId} 嗎？`)) return;
+
+  try {
+    const res = await fetch('http://localhost:5007/complete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ task_id: taskId }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text);
+    }
+
+    // 從 myTasks 中移除該任務
+    //setMyTasks(prev => prev.filter(t => Number(t.id) !== taskId));
+    setUserTasks(prev => prev.filter(t => Number(t.id) !== taskId));
+
+    alert(`任務 ${taskId} 已標記為完成 🎉`);
+  } catch (err: any) {
+    console.error('完成任務錯誤', err);
+    alert(`完成任務失敗 ❌：${err.message}`);
+  }
+}
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -203,24 +287,49 @@ export default function TaskPage() {
   }, [groupId])
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      try {
-        const res = await fetch('http://localhost:5001/auth/whoami', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        setUser({ username: data.username, user_id: String(data.user_id) });
-      } catch (err) {
-        // 可選：處理錯誤
-      }
-    };
-    fetchUser();
-  }, []);
+  const fetchUserAndMyTasks = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      // 取得使用者資訊
+      const res = await fetch('http://localhost:5001/auth/whoami', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) return;
+
+      const userData = await res.json();
+      setUser({ username: userData.username, user_id: String(userData.user_id) });
+
+      // 接著取得目前使用者 in_process 任務
+      const taskRes = await fetch('http://localhost:5007/my-tasks', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!taskRes.ok) return;
+
+      const myTaskData = await taskRes.json();
+      console.log('✅ 成功取得 /my-tasks 資料：', myTaskData);
+
+      setUserTasks(
+        myTaskData.map((task: any) => ({
+          id: String(task.task_id),
+          name: task.title,
+          dueDate: task.end_date?.slice(0, 10) || '',
+          currentOwner: '你自己',
+          status: task.status,
+        }))
+      );
+    } catch (err) {
+      console.error('取得使用者或任務失敗', err);
+    }
+  };
+
+  fetchUserAndMyTasks();
+}, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -330,6 +439,17 @@ export default function TaskPage() {
                 <p className="text-xs text-gray-500">截止日期：{task.dueDate}</p>
                 <p className="text-xs text-gray-500">負責人：{task.currentOwner}</p>
                 <p className="text-xs text-gray-500">狀態：{task.status}</p>
+
+                {/* 任務完成按鈕 */}
+                {task.status === 'in_process' && (
+                  <button
+                    onClick={() => handleCompleteTask(Number(task.id))}
+                    className="mt-2 rounded bg-green-500 px-3 py-1 text-xs text-white hover:bg-green-600"
+                  >
+                    完成任務 ✅
+                  </button>
+                )}
+
               </div>
             ))}
           </div>

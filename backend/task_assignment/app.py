@@ -4,6 +4,7 @@ from routes.assignment import assignment_bp
 from config import Config
 from etcd.etcd_client import register_to_etcd
 import socket
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import get_jwt_secret   
 
@@ -17,6 +18,8 @@ def create_app():
     
      # ★ 初始化 JWTManager ★
     jwt = JWTManager(app)
+
+    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
     
     # 4️⃣ 註冊你的 assignment blueprint
     app.register_blueprint(assignment_bp)
