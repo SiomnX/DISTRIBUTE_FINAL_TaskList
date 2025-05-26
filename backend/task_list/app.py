@@ -24,7 +24,7 @@ def create_app():
     jwt.init_app(app)
 
     # 初始化 socketio 並綁定
-    socketio = SocketIO(app, cors_allowed_origins="*")
+    socketio = SocketIO(app, cors_allowed_origins="http://localhost:5173")
     bind_socketio(socketio)  # 傳給 database.py
 
     # 註冊 blueprint
