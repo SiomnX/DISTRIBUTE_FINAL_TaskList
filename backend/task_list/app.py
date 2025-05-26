@@ -1,33 +1,36 @@
-import os
 import socket
 
 from flask import Flask
 from flask_cors import CORS
+from flask_socketio import SocketIO
 
-from register.config import Config
-from register.routes.auth import auth_bp
-from db.database import db
+from task_list.config import Config
+from task_list.routes.task import task_bp
+from task_list.jwt_setup import jwt
+from db.database import db, bind_socketio
 from etcd.etcd_client import register_to_etcd
-from etcd.etcd_config import get_database_url, get_jwt_secret
+from etcd.etcd_config import get_jwt_secret, get_database_url
 
-
-# 建立並設定好 Flask 應用程式
 def create_app():
     app = Flask(__name__)
-
-    # 使用 config.py 的設定值作為基礎
     app.config.from_object(Config)
-    
-    # 使用 etcd 拿到的參數動態設定資料庫連線與 JWT 金鑰
+
     app.config['SQLALCHEMY_DATABASE_URI'] = get_database_url()
+    app.config["JWT_SECRET_KEY"] = get_jwt_secret()
 
-    # 允許跨來源請求（跨網域）
-    CORS(app)
 
-    # 初始化 SQLAlchemy 資料庫
     db.init_app(app)
+    CORS(app)
+    jwt.init_app(app)
 
-    # 在 app context 中註冊服務並建立資料表
+    # 初始化 socketio 並綁定
+    socketio = SocketIO(app, cors_allowed_origins="*")
+    bind_socketio(socketio)  # 傳給 database.py
+
+    # 註冊 blueprint
+    app.register_blueprint(task_bp)
+
+    # 註冊到 etcd
     with app.app_context():
         service_name = app.config["SERVICE_NAME"]                     # 從環境變數讀取服務名稱
         port = app.config["PORT"]                                     # 服務使用的 port
@@ -35,20 +38,9 @@ def create_app():
 
         # 將服務註冊進 etcd（用於服務發現）
         register_to_etcd(service_name=service_name, ip=ip, port=port)
-
-
-    # 註冊 Blueprint 處理 /auth 路由
-    app.register_blueprint(auth_bp, url_prefix="/auth")
-    
-    # 根目錄路由（測試用）
-    @app.route("/")
-    def index():
-        return " user_service is running!"
-
     return app
 
-# 如果是用 `python app.py` 執行，則啟動伺服器
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=Config.PORT)
 
