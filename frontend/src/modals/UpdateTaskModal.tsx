@@ -1,59 +1,98 @@
 import { useState, useEffect } from 'react'
 import type { FormEvent } from 'react';
 
+interface Task {
+  id: string
+  name: string
+  dueDate: string
+  currentOwner: string
+  status: string
+}
+
 interface Props {
   isOpen: boolean
   onClose: () => void
-  taskId: string
-  initialTitle: string
-  initialEndDate: string
-  onSubmit: (update: {
-    taskId: string
-    title: string
-    endDate: string
-  }) => void
+  task: Task
+  onUpdate: (updatedTask: Task) => void
 }
 
-export default function UpdateTaskModal({
-  isOpen,
-  onClose,
-  taskId,
-  initialTitle,
-  initialEndDate,
-  onSubmit
-}: Props) {
-  const [title, setTitle] = useState(initialTitle)
-  const [endDate, setEndDate] = useState(initialEndDate)
+export default function UpdateTaskModal({ isOpen, onClose, task, onUpdate }: Props) {
+  const [name, setName] = useState(task.name)
+  const [dueDate, setDueDate] = useState(task.dueDate)
+  const [currentOwner, setCurrentOwner] = useState(task.currentOwner)
+  const [status, setStatus] = useState(task.status)
 
   useEffect(() => {
-    setTitle(initialTitle)
-    setEndDate(initialEndDate)
-  }, [initialTitle, initialEndDate])
+    setName(task.name)
+    setDueDate(task.dueDate)
+    setCurrentOwner(task.currentOwner)
+    setStatus(task.status)
+  }, [task])
 
   if (!isOpen) return null
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    onSubmit({ taskId, title, endDate })
+    const updatedTask: Task = {
+      ...task,
+      name,
+      dueDate,
+      currentOwner,
+      status,
+    }
+    onUpdate(updatedTask)
     onClose()
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="w-full max-w-md rounded bg-white p-6 shadow-lg">
-        <button onClick={onClose} className="float-right text-gray-400 hover:text-gray-600">×</button>
+        <button onClick={onClose} className="float-right text-gray-400 hover:text-gray-600 text-lg">×</button>
         <h2 className="mb-1 text-2xl font-bold text-blue-600">更新任務</h2>
-        <p className="mb-4 text-sm text-gray-500">任務 ID: {taskId}</p>
+        <p className="mb-4 text-sm text-gray-500">任務 ID: {task.id}</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm">任務標題 *</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded border px-3 py-2 text-sm" required />
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded border px-3 py-2 text-sm"
+              required
+            />
           </div>
 
           <div>
             <label className="block text-sm">截止日期 *</label>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full rounded border px-3 py-2 text-sm" required />
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full rounded border px-3 py-2 text-sm"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm">負責人</label>
+            <input
+              value={currentOwner}
+              onChange={(e) => setCurrentOwner(e.target.value)}
+              className="w-full rounded border px-3 py-2 text-sm"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm">任務狀態</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full rounded border px-3 py-2 text-sm"
+            >
+              <option value="待處理">待處理</option>
+              <option value="進行中">進行中</option>
+              <option value="已完成">已完成</option>
+            </select>
           </div>
 
           <div className="flex justify-end space-x-2">
@@ -65,4 +104,3 @@ export default function UpdateTaskModal({
     </div>
   )
 }
-
