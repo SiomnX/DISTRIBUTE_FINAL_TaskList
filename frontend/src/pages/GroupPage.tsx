@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GroupCard from '../components/GroupCard';
 import GroupModal from '../components/GroupModal';
+import { fetchWithAuth } from '../utils/fetchWithAuth'
+import { useNavigate } from 'react-router-dom'
+import DeleteGroupModal from '../components/deleteGroupModal';
+import UpdateGroupModal from '../components/UpdateGroupModal';
 
 
 type Group = {
@@ -27,6 +31,28 @@ export default function GroupPage() {
   ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteGroup, setDeleteGroup] = useState(false);
+  const [updateGroup, setUpdateGroup] = useState(false);
+  const navigate = useNavigate()
+
+
+  // 驗證用 fetchWithAuth ======================
+  useEffect(() => {
+  fetchWithAuth('http://localhost:5002/auth/protected')
+    .then(res => {
+      if (!res.ok) throw new Error(`錯誤狀態碼：${res.status}`)
+      return res.json()
+    })
+    .then(data => console.log('✅ Token 驗證成功:', data))
+    .catch(err => console.error('❌ Token 驗證失敗:', err))
+}, [])
+  //=============================================
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    navigate('/')  // 登出後導回首頁
+  }
+
 
   const handleCreateGroup = (name: string) => {
     const maxId = groups.length > 0 ? Math.max(...groups.map(g => g.id)) : 0;
@@ -38,10 +64,21 @@ export default function GroupPage() {
     };
     setGroups((prev) => [...prev, newGroup]);
   };
+
+  const handleDeleteGroup = (groupId: number) => {
+    setGroups(prevGroups => prevGroups.filter(group => group.id != groupId));
+  }
+
+  const handleUpdateGroup = (groupId: number, newName: string) => {
+    setGroups(prevGroups => prevGroups.map(group =>
+      group.id === groupId ? { ...group, name: newName } : group
+    ));
+  }
+
   const handleAddMember = (groupId: number, memberId: number) => {
     setGroups(prevGroups =>
       prevGroups.map(group =>
-        group.id == groupId
+        group.id === groupId
           ? {
               ...group,
               members: [...group.members, memberId],
@@ -74,7 +111,7 @@ export default function GroupPage() {
             <div className="text-sm text-gray-800 font-semibold">username123</div>
             <div className="text-xs text-gray-500">ID: 12345</div>
           </div>
-          <button className="bg-red-500 text-white px-3 py-1 rounded">登出</button>
+          <button onClick={handleLogout} className="bg-red-500 text-white px-3 py-1 rounded">登出</button>
         </div>
       </header>
 
@@ -82,12 +119,24 @@ export default function GroupPage() {
         <h2 className="text-xl font-bold mb-1">我的群組</h2>
         <p className="text-sm text-gray-500 mb-4">管理您參與的所有工作群組</p>
 
-        <div className="mb-4 text-right">
+        <div className="text-right space-x-4">
           <button
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            className="border-2 border border-blue-500 text-blue-500 px-4 py-2 rounded hover:bg-blue-600 hover:text-white"
             onClick={() => setIsModalOpen(true)}
           >
             ＋ 新增群組
+          </button>
+          <button
+            className="border-2 border border-red-500 text-red-500 px-4 py-2 rounded hover:bg-red-600 hover:text-white"
+            onClick={() => setDeleteGroup(true)}
+          >
+            -- 刪除群組
+          </button>
+          <button
+            className="border-2 border border-green-500 text-green-500 px-4 py-2 rounded hover:bg-green-600 hover:text-white"
+            onClick={() => setUpdateGroup(true)}
+          >
+            更改群組名稱
           </button>
         </div>
 
@@ -107,6 +156,18 @@ export default function GroupPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreate={handleCreateGroup}
+      />
+
+      <DeleteGroupModal
+        isOpen={deleteGroup}
+        onClose={() => setDeleteGroup(false)}
+        onCreate={handleDeleteGroup}
+      />
+
+      <UpdateGroupModal
+        isOpen={updateGroup}
+        onClose={() => setUpdateGroup(false)}
+        onCreate={handleUpdateGroup}
       />
     </div>
   );
