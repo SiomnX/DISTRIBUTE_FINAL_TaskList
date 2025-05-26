@@ -155,6 +155,10 @@ export default function TaskPage() {
     }
   }
 
+  const handleCreateTask = (newTask: any) => {
+    setTasks((prev) => [...prev, newTask]);
+  };
+
   useEffect(() => {
     const fetchTasks = async () => {
       const token = localStorage.getItem('token')
@@ -335,7 +339,8 @@ export default function TaskPage() {
         <AddTaskModal
           isOpen={isAddTaskModalOpen}
           onClose={() => setAddTaskModalOpen(false)}
-          onAdd={(newTask) => setTasks((prev) => [...prev, newTask])}
+          onAdd={handleCreateTask}
+          groupId = {groupId} 
         />
       )}
     </div>
