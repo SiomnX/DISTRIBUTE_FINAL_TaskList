@@ -28,7 +28,7 @@ export default function RegisterModal({ isOpen, onClose, onSwitchToLogin }: Prop
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ username, password })  // 根據你的後端格式來調整
+      body: JSON.stringify({ username, password })
     })
 
     if (!res.ok) {

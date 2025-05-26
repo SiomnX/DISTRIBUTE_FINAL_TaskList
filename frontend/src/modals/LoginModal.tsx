@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom'
 
 interface Props {
   isOpen: boolean
@@ -10,6 +11,7 @@ interface Props {
 export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Props) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const navigate = useNavigate()
 
   if (!isOpen) return null
 
@@ -17,6 +19,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Prop
   e.preventDefault()
 
   try {
+    // 使用 fetch 發送登入請求
     const res = await fetch('http://localhost:5001/auth/login', {
       method: 'POST',
       headers: {
@@ -30,13 +33,15 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Prop
       return
     }
 
+    //  登入成功後，取得token
     const data = await res.json()
     const token = data.access_token
 
-    // ✅ 儲存 JWT 到 localStorage
+    //  儲存 JWT 到 localStorage
     localStorage.setItem('token', token)
+    navigate('/groups') // 登入成功跳轉
 
-    // ✅ 關閉 modal，清除輸入欄位
+    //  關閉 modal，清除輸入欄位
     setUsername('')
     setPassword('')
     onClose()

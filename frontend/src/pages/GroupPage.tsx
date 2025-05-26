@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GroupCard from '../components/GroupCard';
 import GroupModal from '../components/GroupModal';
+import { fetchWithAuth } from '../utils/fetchWithAuth'
+import { useNavigate } from 'react-router-dom'
 
 type Group = {
   name: string;
@@ -26,6 +28,26 @@ export default function GroupPage() {
   ]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const navigate = useNavigate()
+
+
+  // 驗證用 fetchWithAuth ======================
+  useEffect(() => {
+  fetchWithAuth('http://localhost:5002/auth/protected')
+    .then(res => {
+      if (!res.ok) throw new Error(`錯誤狀態碼：${res.status}`)
+      return res.json()
+    })
+    .then(data => console.log('✅ Token 驗證成功:', data))
+    .catch(err => console.error('❌ Token 驗證失敗:', err))
+}, [])
+  //=============================================
+
+  const handleLogout = () => {
+    localStorage.removeItem('token')
+    navigate('/')  // 登出後導回首頁
+  }
+
 
   const handleCreateGroup = (name: string) => {
     const newGroup: Group = {
@@ -46,7 +68,7 @@ export default function GroupPage() {
             <div className="text-sm text-gray-800 font-semibold">username123</div>
             <div className="text-xs text-gray-500">ID: 12345</div>
           </div>
-          <button className="bg-red-500 text-white px-3 py-1 rounded">登出</button>
+          <button onClick={handleLogout} className="bg-red-500 text-white px-3 py-1 rounded">登出</button>
         </div>
       </header>
 
