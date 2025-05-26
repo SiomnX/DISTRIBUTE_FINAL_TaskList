@@ -1,4 +1,5 @@
-import { useState, FormEvent } from 'react'
+import { useState } from 'react'
+import type { FormEvent } from 'react';
 
 interface Props {
   isOpen: boolean
@@ -12,11 +13,42 @@ export default function LoginModal({ isOpen, onClose, onSwitchToRegister }: Prop
 
   if (!isOpen) return null
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    // TODO: 呼叫 login API
-    console.log('login', username, password)
+  const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault()
+
+  try {
+    const res = await fetch('http://localhost:5001/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    })
+
+    if (!res.ok) {
+      alert('登入失敗，請確認帳號與密碼')
+      return
+    }
+
+    const data = await res.json()
+    const token = data.access_token
+
+    // ✅ 儲存 JWT 到 localStorage
+    localStorage.setItem('token', token)
+
+    // ✅ 關閉 modal，清除輸入欄位
+    setUsername('')
+    setPassword('')
+    onClose()
+
+    alert('登入成功！')
+
+  } catch (err) {
+    console.error('登入錯誤', err)
+    alert('伺服器錯誤，請稍後再試')
   }
+}
+
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
