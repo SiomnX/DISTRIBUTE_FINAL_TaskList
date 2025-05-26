@@ -4,10 +4,11 @@ import GroupModal from '../components/GroupModal';
 import { fetchWithAuth } from '../utils/fetchWithAuth'
 import { useNavigate } from 'react-router-dom'
 
+
 type Group = {
   name: string;
-  id: string;
-  members: string[];
+  id: number;
+  members: number[];
   totalMembers: number;
 };
 
@@ -15,14 +16,14 @@ export default function GroupPage() {
   const [groups, setGroups] = useState<Group[]>([
     {
       name: "前端開發團隊",
-      id: "GRP001",
-      members: ["alice_dev", "bob_designer", "charlie_pm"],
+      id: 1,
+      members: [101, 102, 103],
       totalMembers: 5,
     },
     {
       name: "行銷企劃組",
-      id: "GRP002",
-      members: ["david_marketing", "eva_content"],
+      id: 2,
+      members: [101, 102, 103],
       totalMembers: 3,
     },
   ]);
@@ -50,13 +51,40 @@ export default function GroupPage() {
 
 
   const handleCreateGroup = (name: string) => {
+    const maxId = groups.length > 0 ? Math.max(...groups.map(g => g.id)) : 0;
     const newGroup: Group = {
       name,
-      id: `GRP${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      id: maxId + 1,
       members: [],
       totalMembers: 0,
     };
     setGroups((prev) => [...prev, newGroup]);
+  };
+  const handleAddMember = (groupId: number, memberId: number) => {
+    setGroups(prevGroups =>
+      prevGroups.map(group =>
+        group.id == groupId
+          ? {
+              ...group,
+              members: [...group.members, memberId],
+              totalMembers: group.totalMembers + 1,
+            }
+          : group
+      )
+    );
+  };
+  const handleDeleteMember = (groupId: number, memberId: number) => {
+    setGroups(prevGroups =>
+      prevGroups.map(group =>
+        group.id === groupId
+          ? {
+              ...group,
+              members: group.members.filter(member => member != memberId),
+              totalMembers: group.totalMembers - 1,
+            }
+          : group
+      )
+    );
   };
 
   return (
@@ -87,7 +115,12 @@ export default function GroupPage() {
 
         <div className="space-y-4">
           {groups.map((group, index) => (
-            <GroupCard key={index} group={group} />
+            <GroupCard 
+              key={index} 
+              group={group} 
+              onAddMember={(memberId) => handleAddMember(group.id, memberId)}
+              onDeleteMember={(memberId) => handleDeleteMember(group.id, memberId)}
+            />
           ))}
         </div>
       </div>
@@ -100,4 +133,3 @@ export default function GroupPage() {
     </div>
   );
 }
-
