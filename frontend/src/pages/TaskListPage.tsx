@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import TaskSelectionModal from '../modals/TaskSelectionModal'
 import UpdateTaskModal from '../modals/UpdateTaskModal'
 import AddTaskModal from '../modals/AddTaskModal'
@@ -13,7 +14,7 @@ interface Task {
 // TaskPage() 是這頁的主元件
 export default function TaskPage() {
     // tasks	所有任務的清單（預設兩個任務）
-  const [tasks, setTasks] = useState<Task[]>([
+  const [tasks, setTasks] = useState<Task[]>([/*
     {
       id: 'TSK001',
       name: '設計系統建立',
@@ -35,7 +36,11 @@ export default function TaskPage() {
       currentOwner: '未指派',
       status: 'completed',
     },
-  ])
+  */])
+
+  const { id } = useParams()
+  const groupId = id || '1'  // 若網址中沒有 id，預設使用 1
+
   // userTasks	使用者自己已接下的任務
   const [userTasks, setUserTasks] = useState<Task[]>([])
   // selectedTask	當前被選中的任務（用於顯示模態視窗）
@@ -118,7 +123,45 @@ export default function TaskPage() {
     }
   }
 
+  useEffect(() => {
+    const fetchTasks = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('請先登入')
+        return
+      }
   
+      try {
+        const res = await fetch(`http://localhost:5003/group/${groupId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+  
+        if (!res.ok) {
+          const text = await res.text()
+          throw new Error(text)
+        }
+  
+        const data = await res.json()
+        setTasks(
+          data.map((task: any) => ({
+            id: String(task.id),
+            name: task.title,
+            dueDate: task.end_date?.slice(0, 10) || '', // yyyy-mm-dd
+            currentOwner: '未指派', // 目前後端沒傳這個欄位
+            status: task.status,
+          }))
+        )        
+
+      } catch (err) {
+        console.error('取得任務失敗', err)
+        alert('取得任務失敗，請稍後再試')
+      }
+    }
+  
+    fetchTasks()
+  }, [groupId])
 
   return (
     <div className="p-6">

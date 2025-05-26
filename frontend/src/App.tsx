@@ -9,7 +9,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<WelcomePage />} />
-         <Route path="/tasks" element={<TaskListPage />} />
+         <Route path="/groups/:id" element={<TaskListPage />} />
         <Route path="/groups" element={<GroupPage/>}/>
         {/* 之後再加 /login、/groups、/tasks … */}
       </Routes>
