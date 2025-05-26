@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 
-interface GroupModalProps {
+interface MemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreate: (name: string) => void;
 }
 
-export default function GroupModal({ isOpen, onClose, onCreate }: GroupModalProps) {
-  const [groupName, setGroupName] = useState('');
+export default function AddMemberModal({ isOpen, onClose, onCreate }: MemberModalProps) {
+  const [MemberId, setMemberId] = useState('');
 
   const handleConfirm = () => {
-    if (groupName.trim()) {
-      onCreate(groupName.trim());
-      setGroupName('');
+    if (MemberId.trim()) {
+      onCreate(MemberId.trim());
+      setMemberId('');
       onClose();
     }
   };
@@ -23,16 +23,16 @@ export default function GroupModal({ isOpen, onClose, onCreate }: GroupModalProp
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg w-96 shadow-md">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">新增群組</h2>
+          <h2 className="text-xl font-bold">新增成員</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
         </div>
 
-        <label className="block text-sm font-semibold text-gray-700 mb-1">群組名稱</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">成員ID</label>
         <input
           type="text"
-          value={groupName}
-          onChange={(e) => setGroupName(e.target.value)}
-          placeholder="請輸入群組名稱"
+          value={MemberId}
+          onChange={(e) => setMemberId(e.target.value)}
+          placeholder="請輸入成員ID"
           className="w-full border border-gray-300 rounded px-3 py-2 mb-4"
         />
 
@@ -44,6 +44,3 @@ export default function GroupModal({ isOpen, onClose, onCreate }: GroupModalProp
     </div>
   );
 }
-
-
-
