@@ -52,6 +52,9 @@ export default function TaskPage() {
   // isUpdateTaskModalOpen	控制【更新任務】視窗是否開啟
   const [isUpdateTaskModalOpen, setUpdateTaskModalOpen] = useState(false)
 
+  // user	使用者資訊
+  const [user, setUser] = useState<{ username: string; user_id: string } | null>(null)
+
   // 選取任務
   const handleSelectTask = (task: Task) => {
     setSelectedTask(task)
@@ -199,6 +202,31 @@ export default function TaskPage() {
     fetchTasks()
   }, [groupId])
 
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const res = await fetch('http://localhost:5001/auth/whoami', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setUser({ username: data.username, user_id: String(data.user_id) });
+      } catch (err) {
+        // 可選：處理錯誤
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/'; // 或用 navigate('/') 如果你有 useNavigate
+  };
+
   return (
     <div className="p-6">
       {/* 頁面標題 */}
@@ -219,11 +247,14 @@ export default function TaskPage() {
                 U
               </div>
               <div>
-                <p className="text-sm font-semibold">username123</p>
-                <p className="text-xs text-gray-500">ID: 12345</p>
+                <p className="text-sm font-semibold">{user ? user.username : '載入中...'}</p>
+                <p className="text-xs text-gray-500">ID: {user ? user.user_id : ''}</p>
               </div>
             </div>
-            <button className="rounded bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600">
+            <button
+              className="rounded bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600"
+              onClick={handleLogout}
+            >
               登出
             </button>
           </div>
