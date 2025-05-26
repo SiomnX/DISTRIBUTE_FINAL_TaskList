@@ -1,17 +1,33 @@
+import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import AddMemberModal from "./AddMemberModal";
+import DeleteMemberModal from "./DeleteMemberModal";
+
 type GroupCardProps = {
   group: {
     name: string;
-    id: string;
-    members: string[];
+    id: number;
+    members: number[];
     totalMembers: number;
   };
+  onAddMember : (memberId: number) => void;
+  onDeleteMember: (memberId: number) => void;
 };
-
-export default function GroupCard({ group }: GroupCardProps) {
+export default function GroupCard({ group, onAddMember, onDeleteMember }: GroupCardProps) {
+  const navigate = useNavigate();  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpenForDelete, setIsModalOpenForDelete] = useState(false);
   return (
-    <div className="flex justify-between items-start">
+    <div className="flex justify-between items-center bg-white shadow-md rounded-lg p-4 mb-4">
+      {/* 左側：群組名稱 */}
       <div>
-        <h3 className="text-lg font-semibold">{group.name}</h3>
+        <button 
+          type="button" 
+          className="text-lg font-semibold px-1 py-1 rounded hover:bg-gray-300 transition"
+          onClick={() => navigate(`/group/${group.id}`)}
+        >
+          {group.name}
+        </button>
         <p className="text-sm text-gray-500">群組 ID: {group.id}</p>
         <div className="mt-2">
           <p className="text-sm text-gray-500">成員列表:</p>
@@ -27,9 +43,38 @@ export default function GroupCard({ group }: GroupCardProps) {
           </div>
         </div>
       </div>
-      <div className="text-sm bg-gray-100 text-gray-700 px-3 py-1 rounded-full">
-        {group.totalMembers} 成員
+      {/* 右側：新增成員＋刪除成員 */}
+      <div className="flex items-center space-x-4">
+        <button
+          className="bg-green-500 text-white px-4 py-1 rounded hover:bg-gray-600"
+          onClick={() => setIsModalOpen(true)}
+        >
+          加＋
+        </button>
+        <button
+          className="bg-red-500 text-white px-4 py-1 rounded hover:bg-gray-600"
+          onClick={() => setIsModalOpenForDelete(true)}
+        >
+          踢！
+        </button>
       </div>
+      {/* 新增成員彈窗 */}
+      <AddMemberModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreate={(memberId) => {
+          onAddMember(Number(memberId));
+          setIsModalOpen(false);
+        }}
+      />
+      <DeleteMemberModal
+        isOpen={isModalOpenForDelete}
+        onClose={() => setIsModalOpenForDelete(false)}
+        onCreate={(memberId) => {
+          onDeleteMember(Number(memberId));
+          setIsModalOpenForDelete(false);
+        }}
+      />
     </div>
   );
 }
