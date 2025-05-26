@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react'
+import { useState, FormEvent } from 'react'
 
 interface Task {
   id: string
@@ -11,73 +11,97 @@ interface Task {
 interface Props {
   isOpen: boolean
   onClose: () => void
-  task: Task
-  onUpdate: (updatedTask: Task) => void
+  onAdd: (newTask: Task) => void
 }
 
-export default function UpdateTaskModal({ isOpen, onClose, task, onUpdate }: Props) {
-  const [name, setName] = useState(task.name)
-  const [dueDate, setDueDate] = useState(task.dueDate)
-  const [currentOwner, setCurrentOwner] = useState(task.currentOwner)
-  const [status, setStatus] = useState(task.status)
-
-  useEffect(() => {
-    setName(task.name)
-    setDueDate(task.dueDate)
-    setCurrentOwner(task.currentOwner)
-    setStatus(task.status)
-  }, [task])
-
-  if (!isOpen) return null
+export default function AddTaskModal({ isOpen, onClose, onAdd }: Props) {
+  const [name, setName] = useState('')
+  const [dueDate, setDueDate] = useState('')
+  const groupId = 'GRP001' // 群組 ID 固定
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
-    const updatedTask: Task = {
-      ...task,
+
+    const newTask: Task = {
+      id: 'TSK' + Date.now(),
       name,
       dueDate,
-      currentOwner,
-      status,
+      currentOwner: groupId,
+      status: '待處理',
     }
-    onUpdate(updatedTask)
+
+    onAdd(newTask)
     onClose()
   }
+
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="w-full max-w-md rounded bg-white p-6 shadow-lg">
-        <button onClick={onClose} className="float-right text-gray-400 hover:text-gray-600 text-lg">×</button>
-        <h2 className="mb-1 text-2xl font-bold text-blue-600">更新任務</h2>
-        <p className="mb-4 text-sm text-gray-500">任務 ID: {task.id}</p>
+        {/* 關閉按鈕 */}
+        <button
+          onClick={onClose}
+          className="float-right text-gray-400 hover:text-gray-600 text-lg"
+        >
+          ×
+        </button>
 
+        {/* 標題 */}
+        <h2 className="mb-4 text-2xl font-bold text-blue-600">新增任務</h2>
+
+        {/* 表單 */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 任務標題 */}
           <div>
-            <label className="block text-sm">任務標題 *</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded border px-3 py-2 text-sm" required />
+            <label className="block text-sm font-medium">任務標題 *</label>
+            <input
+              required
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded border px-3 py-2 text-sm"
+            />
           </div>
 
+          {/* 截止日期 */}
           <div>
-            <label className="block text-sm">截止日期 *</label>
-            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="w-full rounded border px-3 py-2 text-sm" required />
+            <label className="block text-sm font-medium">截止日期 *</label>
+            <input
+              required
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full rounded border px-3 py-2 text-sm"
+            />
           </div>
 
+          {/* 群組 ID（預設值） */}
           <div>
-            <label className="block text-sm">負責人</label>
-            <input value={currentOwner} onChange={(e) => setCurrentOwner(e.target.value)} className="w-full rounded border px-3 py-2 text-sm" />
+            <label className="block text-sm font-medium">群組 ID</label>
+            <input
+              type="text"
+              value={groupId}
+              disabled
+              className="w-full rounded border px-3 py-2 text-sm bg-gray-100 text-gray-500"
+            />
           </div>
 
-          <div>
-            <label className="block text-sm">任務狀態</label>
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded border px-3 py-2 text-sm">
-              <option value="待處理">待處理</option>
-              <option value="進行中">進行中</option>
-              <option value="已完成">已完成</option>
-            </select>
-          </div>
-
-          <div className="flex justify-end space-x-2">
-            <button type="button" onClick={onClose} className="rounded border px-4 py-2 text-sm">取消</button>
-            <button type="submit" className="rounded bg-orange-500 px-4 py-2 text-white hover:bg-orange-600">更新</button>
+          {/* 按鈕區 */}
+          <div className="flex justify-end space-x-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded border px-4 py-2 text-sm hover:bg-gray-100"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              className="rounded bg-blue-500 px-4 py-2 text-sm text-white hover:bg-blue-600"
+            >
+              新增
+            </button>
           </div>
         </form>
       </div>
