@@ -1,8 +1,10 @@
 import os
 import socket
+
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+
 from groups.config import Config
 from groups.routes.groups import groups_bp
 from db.database import db
@@ -38,7 +40,7 @@ def create_app():
         register_to_etcd(service_name=service_name, ip=ip, port=port)
 
         # 根據 model 自動建立資料表（如果尚未建立）
-        db.create_all()
+        #db.create_all()
 
     # 註冊 Blueprint 處理 /auth 路由
     app.register_blueprint(groups_bp, url_prefix="/groups")
