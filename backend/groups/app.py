@@ -23,7 +23,7 @@ def create_app():
     app.config['JWT_SECRET_KEY'] = get_jwt_secret()
 
     # 允許跨來源請求（跨網域）
-    CORS(app)
+    CORS(app, supports_credentials=True)
 
     JWTManager(app)
 

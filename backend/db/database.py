@@ -172,3 +172,4 @@ def remove_assignment(task_id):
         db.session.delete(assignment)
         db.session.commit()
 
+
