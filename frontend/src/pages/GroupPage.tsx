@@ -3,8 +3,8 @@ import GroupCard from '../components/GroupCard';
 import GroupModal from '../components/GroupModal';
 import { fetchWithAuth } from '../utils/fetchWithAuth'
 import { useNavigate } from 'react-router-dom'
-import DeleteGroupModal from '../components/DeleteGroupModal';
-import UpdateGroupModal from '../components/UpdateGroupModal';
+// import DeleteGroupModal from '../components/DeleteGroupModal';
+// import UpdateGroupModal from '../components/UpdateGroupModal';
 
 
 type Group = {
@@ -156,18 +156,6 @@ export default function GroupPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onCreate={handleCreateGroup}
-      />
-
-      <DeleteGroupModal
-        isOpen={deleteGroup}
-        onClose={() => setDeleteGroup(false)}
-        onCreate={handleDeleteGroup}
-      />
-
-      <UpdateGroupModal
-        isOpen={updateGroup}
-        onClose={() => setUpdateGroup(false)}
-        onCreate={handleUpdateGroup}
       />
     </div>
   );

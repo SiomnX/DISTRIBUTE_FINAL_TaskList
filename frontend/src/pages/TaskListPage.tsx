@@ -2,6 +2,7 @@ import { useState } from 'react'
 import TaskSelectionModal from '../modals/TaskSelectionModal'
 import UpdateTaskModal from '../modals/UpdateTaskModal'
 import AddTaskModal from '../modals/AddTaskModal'
+import NotificationModal from '../modals/NotificationModal'
 
 interface Task {
   id: string
@@ -46,6 +47,11 @@ export default function TaskPage() {
   const [isAddTaskModalOpen, setAddTaskModalOpen] = useState(false)
   // isUpdateTaskModalOpen	控制【更新任務】視窗是否開啟
   const [isUpdateTaskModalOpen, setUpdateTaskModalOpen] = useState(false)
+  // show	控制通知視窗是否顯示
+  const [show, setShow] = useState(false)
+  // notifications通知清單
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
 
   // 選取任務
   const handleSelectTask = (task: Task) => {
@@ -105,6 +111,45 @@ export default function TaskPage() {
       })
   }
 
+  const handleReceiveNotification = () => {
+    // 模擬後端抓資料
+    const fetched = [
+      {
+        type: '任務更新',
+        content: '任務「實作登入頁面」狀態已更新為進行中',
+        time: '2分鐘前',
+      },
+      {
+        type: '截止提醒',
+        content: '任務「設計系統建立」將在3天後到期',
+        time: '1小時前',
+      },
+      {
+        type: '新成員',
+        content: '新成員 john_dev 加入了群組',
+        time: '2小時前',
+      },
+      {
+        type: '任務完成',
+        content: '任務「API 文件撰寫」已完成',
+        time: '昨天',
+      },
+    ];
+    // fetch('/api/notifications')
+    //   .then(res => {
+    //     if (!res.ok) throw new Error('取得通知失敗');
+    //     return res.json();
+    //   })
+    //   .then(data => {
+    //     setNotifications(data); // 假設 data 是通知陣列
+    //   })
+    //   .catch(err => {
+    //     alert('取得通知時發生錯誤');
+    //     console.error(err);
+    //   });
+    setNotifications(fetched);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
@@ -118,8 +163,6 @@ export default function TaskPage() {
     }
   }
 
-  
-
   return (
     <div className="p-6">
       {/* 頁面標題 */}
@@ -128,10 +171,28 @@ export default function TaskPage() {
         <div className="flex items-center gap-4">
           {/* 通知按鈕 */}
           <div className="relative">
-            <button className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300">
+            <button 
+              onClick={() => {
+                setShow(!show)
+                handleReceiveNotification();
+              }}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300"
+            >
               <span className="text-lg">🔔</span>
+              {/*有通知才會有紅點*/}
+              {notifications.length > 0 && (
+                <span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500"></span>
+              )}
             </button>
-            <span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500"></span>
+            {/* 通知彈跳視窗 */}
+            {show && (
+              <NotificationModal
+                isOpen={show}
+                onClose={() => setShow(false)}
+                notifications={notifications}
+                onMarkAllRead={() => setNotifications([])}
+              />
+            )}
           </div>
           {/* 使用者資訊 */}
           <div className="flex items-center gap-4">
