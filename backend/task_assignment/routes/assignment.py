@@ -6,15 +6,6 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 # flask  for app.py
 assignment_bp = Blueprint("assignment", __name__)
 
-# POsgre的資訊，db連綫
-# conn = psycopg2.connect(
-#     host = DB_HOST,
-#     port = DB_PORT,
-#     dbname = DB_NAME,
-#     user = DB_USER,
-#     password = DB_PASSWORD
-# )
-# Establish DB connection using Config
 conn = psycopg2.connect(
     host=Config.DB_HOST,
     port=Config.DB_PORT,
@@ -24,126 +15,79 @@ conn = psycopg2.connect(
 )
 cursor = conn.cursor() # 建立cursor, 負責與db互動
 
-# send POST request to notification 微服務
-# def notify(event_type, user, task_id, title):
-#     try:
-#         requests.post("http://notification:5003", json = { # notification的port
-#             "type": event_type,
-#             "user": user,
-#             "task_id": task_id,
-#             "title": title
-#         })
-#     except Exception as e:
-#         print("Notificatio failed:", e)
-
-# 槍任務(POST)
-# change status from 'pending' to 'in_process' && 通知
-# @assignment_bp.route("/claim", methods=["POST"])
-# def claim_task():
-#     data = request.get_json()
-#     user = data.get("user")
-#     task_id = data.get("task_id")
-
-#     if not user or not task_id:
-#         return jsonify({"error": "Missing user or task_id"}), 400
-    
-#     # 操作 db
-#     cursor.execute("""
-#             UPDATE task SET status = 'in_process'
-#             WHERE task_id = %s AND status = 'pending'
-#             RETURNING title;
-#             """,(task_id,))
-    
-#     # 拿回查詢 results (fetch title)
-#     result = cursor.fetchone() 
-#     if result:
-#         title = result[0]
-#         conn.commit()
-#         # notify("task_claimed", user, task_id, title)
-#         return jsonify({"message": "Task claimed!!", "task_id": task_id, "title": title})
-#     else:
-#         return jsonify ({"error": "Task already claimed or not found :("}),
 @assignment_bp.route("/claim", methods=["POST"])
-@jwt_required()  # 保护此路由，必须带有效 JWT
+@jwt_required()
 def claim_task():
     data = request.get_json()
-    #user_id = data.get("user_id")      # 前端要傳 "user_id"
     task_id = data.get("task_id")
-    user_id = get_jwt_identity()  # 从 JWT 拿到的身份（identity）
+    user_id = get_jwt_identity()
 
     if not user_id or not task_id:
         return jsonify({"error": "Missing user_id or task_id"}), 400
 
+    conn = psycopg2.connect(
+        host=Config.DB_HOST,
+        port=Config.DB_PORT,
+        dbname=Config.DB_NAME,
+        user=Config.DB_USER,
+        password=Config.DB_PASSWORD
+    )
+
     try:
-        # 先清掉上次失敗的 transaction
-        conn.rollback()
-
-        # 1. 更新 task 為 in_process
-        cursor.execute("""
-            UPDATE task
-               SET status = 'in_process'
-             WHERE task_id = %s
-               AND status = 'pending'
-            RETURNING title;
-        """, (task_id,))
-        task_row = cursor.fetchone()
-        if not task_row:
+        with conn.cursor() as cursor:
             conn.rollback()
-            return jsonify({"error": "Task already claimed or not found"}), 404
-        title = task_row[0]
 
-        # 2. 在 assignment 表新增指派
-        cursor.execute("""
-            INSERT INTO assignment (task_id, user_id)
-            VALUES (%s, %s)
-            RETURNING task_id, user_id;
-        """, (task_id, user_id))
-        assigned = cursor.fetchone()  # (task_id, user_id)
+            # 1️⃣ 嘗試將任務設為 in_process
+            cursor.execute("""
+                UPDATE task
+                   SET status = 'in_process'
+                 WHERE task_id = %s AND status = 'pending'
+                RETURNING title;
+            """, (task_id,))
+            task_row = cursor.fetchone()
 
-        # 3. 一起 commit
-        conn.commit()
+            if not task_row:
+                conn.rollback()
+                return jsonify({
+                    "error": "Task already claimed or not found",
+                    "details": f"Task {task_id} is not in 'pending' status or does not exist."
+                }), 404
 
-        # 4. 回傳結果
-        return jsonify({
-            "message": "Task claimed and assigned",
-            "task_id": assigned[0],
-            "user_id": assigned[1],
-            "title": title
-        }), 201
+            title = task_row[0]
 
-    except psycopg2.IntegrityError:
-        # 已存在同樣的 (task_id, user_id)
-        conn.rollback()
-        return jsonify({"error": "Assignment already exists"}), 409
+            # 2️⃣ 先查是否 assignment 存在
+            cursor.execute("""
+                SELECT 1 FROM assignment
+                 WHERE task_id = %s AND user_id = %s;
+            """, (task_id, user_id))
+            if cursor.fetchone():
+                conn.rollback()
+                return jsonify({"error": "Assignment already exists"}), 409
+
+            # 3️⃣ 插入 assignment
+            cursor.execute("""
+                INSERT INTO assignment (task_id, user_id)
+                VALUES (%s, %s)
+                RETURNING task_id, user_id;
+            """, (task_id, user_id))
+            assigned = cursor.fetchone()
+
+            conn.commit()
+
+            return jsonify({
+                "message": "Task claimed and assigned",
+                "task_id": assigned[0],
+                "user_id": assigned[1],
+                "title": title
+            }), 201
 
     except Exception as e:
         conn.rollback()
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
-# 取消任務 POST
-# 釋出名額 ('in_process' to 'pending') && 通知
-# @assignment_bp.route("/cancel", methods=["POST"])
-# def cancel_task():
-#     data = request.get_json()
-#     user = data.get("user")
-#     task_id = data.get("task_id")
+    finally:
+        conn.close()
 
-#     if not user or not task_id:
-#         return jsonify({"error !": "Missing task_id"}), 400
-    
-#     cursor.execute("""
-#                    UPDATE task SET status = 'pending'
-#                    WHERE task_id = %s AND status = 'in_process'
-#                    RETURNING title;
-#                    """, (task_id,))
-#     result = cursor.fetchone()
-#     if result:
-#         title = result[0]
-#         conn.commit()
-#         # notify("task_cancelled", user, task_id, title)
-#         return jsonify({"message": "Task_released, 任務已釋出", "task_id": task_id})
-#     else:
-#         return jsonify({"error": "Task not in progress or not found!"})
 
 @assignment_bp.route("/cancel", methods=["POST"])
 @jwt_required()
@@ -355,3 +299,80 @@ def remove_assignment():
         # 印出到日誌才能看到細節
         print("remove_assignment ERROR:", e)
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
+
+# NEW：完成任務
+@assignment_bp.route("/complete", methods=["POST"])
+@jwt_required()
+def complete_task():
+    data = request.get_json()
+    task_id = data.get("task_id")
+    user_id = get_jwt_identity()
+
+    if not task_id or not user_id:
+        return jsonify({"error": "Missing task_id"}), 400
+
+    try:
+        conn.rollback()
+
+        # 確保這個 user 正在做這個任務（可選）
+        cursor.execute("""
+            SELECT 1 FROM assignment
+             WHERE task_id = %s AND user_id = %s;
+        """, (task_id, user_id))
+        if not cursor.fetchone():
+            return jsonify({"error": "Not assigned or not in process"}), 403
+
+        # 把 task 狀態改成 completed
+        cursor.execute("""
+            UPDATE task
+               SET status = 'completed'
+             WHERE task_id = %s
+               AND status = 'in_process'
+            RETURNING title;
+        """, (task_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.rollback()
+            return jsonify({"error": "Task not in progress or not found"}), 404
+
+        conn.commit()
+        return jsonify({
+            "message": "Task completed",
+            "task_id": task_id,
+            "title": row[0]
+        }), 200
+
+    except Exception as e:
+        conn.rollback()
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
+
+# NEW: 顯示目前自己 in_process 的任務
+@assignment_bp.route("/my-tasks", methods=["GET"])
+@jwt_required()
+def get_my_tasks():
+    user_id = get_jwt_identity()
+
+    try:
+        cursor.execute("""
+            SELECT t.task_id, t.title, t.status, t.end_date, t.group_id
+              FROM task t
+              JOIN assignment a ON t.task_id = a.task_id
+             WHERE a.user_id = %s AND t.status = 'in_process';
+        """, (user_id,))
+        tasks = cursor.fetchall()
+
+        result = [
+            {
+                "task_id": row[0],
+                "title": row[1],
+                "status": row[2],
+                "end_date": row[3],
+                "group_id": row[4]
+            } for row in tasks
+        ]
+
+        return jsonify(result), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({"error": "Internal error", "details": str(e)}), 500

@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import TaskSelectionModal from '../modals/TaskSelectionModal'
 import UpdateTaskModal from '../modals/UpdateTaskModal'
 import AddTaskModal from '../modals/AddTaskModal'
+import { fetchWithAuth } from '../utils/fetchWithAuth'
 
 interface Task {
   id: string
@@ -13,7 +15,7 @@ interface Task {
 // TaskPage() 是這頁的主元件
 export default function TaskPage() {
     // tasks	所有任務的清單（預設兩個任務）
-  const [tasks, setTasks] = useState<Task[]>([
+  const [tasks, setTasks] = useState<Task[]>([/*
     {
       id: 'TSK001',
       name: '設計系統建立',
@@ -35,7 +37,11 @@ export default function TaskPage() {
       currentOwner: '未指派',
       status: 'completed',
     },
-  ])
+  */])
+
+  const { id } = useParams()
+  const groupId = id || '1'  // 若網址中沒有 id，預設使用 1
+
   // userTasks	使用者自己已接下的任務
   const [userTasks, setUserTasks] = useState<Task[]>([])
   // selectedTask	當前被選中的任務（用於顯示模態視窗）
@@ -46,6 +52,9 @@ export default function TaskPage() {
   const [isAddTaskModalOpen, setAddTaskModalOpen] = useState(false)
   // isUpdateTaskModalOpen	控制【更新任務】視窗是否開啟
   const [isUpdateTaskModalOpen, setUpdateTaskModalOpen] = useState(false)
+
+  // user	使用者資訊
+  const [user, setUser] = useState<{ username: string; user_id: string } | null>(null)
 
   // 選取任務
   const handleSelectTask = (task: Task) => {
@@ -67,9 +76,41 @@ export default function TaskPage() {
   }
 
   // 刪除任務
-  const handleDeleteTask = (taskId: string) => {
-    setTasks((prev) => prev.filter((task) => task.id !== taskId))
+  const handleDeleteTask = async (taskId: string) => {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      alert('請先登入')
+      return
+    }
+  
+    if (!window.confirm('確定要刪除這個任務嗎？')) return
+  
+    try {
+      const res = await fetch(`http://localhost:5003/task/${taskId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+  
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(text)
+      }
+  
+      const data = await res.json()
+      console.log('刪除成功:', data)
+  
+      // 從畫面上移除該任務
+      setTasks((prev) => prev.filter((task) => task.id !== taskId))
+      alert('任務刪除成功')
+  
+    } catch (err) {
+      console.error('刪除任務失敗', err)
+      alert('刪除任務失敗，請稍後再試')
+    }
   }
+  
 
   // 更新任務
   const handleUpdateTask = (updatedTask: Task) => {
@@ -79,31 +120,114 @@ export default function TaskPage() {
     setUpdateTaskModalOpen(false)
   }
 
-  const handleSubmitAllUserTasks = () => {
-    if (userTasks.length === 0) {
-      alert('你尚未選擇任何任務')
-      return
+  // 一次送出，claim 幾個任務
+  const handleSubmitAllUserTasks = async () => {
+  if (userTasks.length === 0) {
+    alert('你尚未選擇任何任務');
+    return;
+  }
+
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('請先登入');
+    return;
+  }
+
+  if (!window.confirm('確定要認領任務嗎？')) return;
+
+  const successes: string[] = [];
+  const failures: string[] = [];
+
+  for (const t of userTasks) {
+    try {
+      const res = await fetch('http://localhost:5007/claim', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ task_id: t.id }),
+      });
+
+      if (!res.ok) {
+      const text = await res.text();
+      console.warn(`❌ Claim failed for task ${t.id}:`, text);
+      failures.push(`❌ ${t.name} (${t.id})：${text}`);
+    } else {
+      const data = await res.json();
+      successes.push(`✅ ${t.name} (${t.id})`);
+    }
+  } catch (err: any) {
+    console.error(`❌ Network or logic error for task ${t.id}:`, err);
+    failures.push(`❌ ${t.name} (${t.id})：${err.message}`);
+  }
+}
+
+  // 清空選取列表
+  //setUserTasks([]);
+
+    // 顯示結果
+    if (successes.length > 0) {
+      alert("以下任務認領成功：\n" + successes.join('\n'));
     }
 
-    fetch('/api/submitTasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userTasks), // 一次送出多筆任務
-    })
-      .then((res) => {
-        if (res.ok) {
-          alert('成功送出任務 ✅')
-          setUserTasks([]) // 清空畫面
-          // 可選：重新載入任務列表
-          // fetchTasksFromServer()
-        } else {
-          alert('送出失敗 ❌')
-        }
-      })
-      .catch(() => {
-        alert('發生錯誤，請稍後再試')
-      })
+    if (failures.length > 0) {
+      alert("任務認領失敗：\n" + failures.join('\n'));
+    }
+
+    // 用後端回傳資料直接更新 userTasks，這樣畫面就會留你剛認領的任務
+    try {
+      const res = await fetchWithAuth('/my-tasks');
+      const updated = await res.json();
+      setUserTasks(
+        updated.map((task: any) => ({
+          id: String(task.task_id),
+          name: task.title,
+          dueDate: task.end_date?.slice(0, 10) || '',
+          currentOwner: '你自己',
+          status: task.status,
+        }))
+      );
+    } catch (err) {
+      console.error("載入我的任務失敗", err);
+    }
+}
+
+// 任務完成（call api 更新資料庫 status to completed）
+const handleCompleteTask = async (taskId: number) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('請先登入');
+    return;
   }
+
+  if (!window.confirm(`你確定已完成任務 ${taskId} 嗎？`)) return;
+
+  try {
+    const res = await fetch('http://localhost:5007/complete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ task_id: taskId }),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text);
+    }
+
+    // 從 myTasks 中移除該任務
+    //setMyTasks(prev => prev.filter(t => Number(t.id) !== taskId));
+    setUserTasks(prev => prev.filter(t => Number(t.id) !== taskId));
+
+    alert(`任務 ${taskId} 已標記為完成 🎉`);
+  } catch (err: any) {
+    console.error('完成任務錯誤', err);
+    alert(`完成任務失敗 ❌：${err.message}`);
+  }
+}
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -118,7 +242,99 @@ export default function TaskPage() {
     }
   }
 
+  const handleCreateTask = (newTask: any) => {
+    setTasks((prev) => [...prev, newTask]);
+  };
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        alert('請先登入')
+        return
+      }
   
+      try {
+        const res = await fetch(`http://localhost:5003/group/${groupId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+  
+        if (!res.ok) {
+          const text = await res.text()
+          throw new Error(text)
+        }
+  
+        const data = await res.json()
+        setTasks(
+          data.map((task: any) => ({
+            id: String(task.id),
+            name: task.title,
+            dueDate: task.end_date?.slice(0, 10) || '', // yyyy-mm-dd
+            currentOwner: '未指派', // 目前後端沒傳這個欄位
+            status: task.status,
+          }))
+        )        
+
+      } catch (err) {
+        console.error('取得任務失敗', err)
+        alert('取得任務失敗，請稍後再試')
+      }
+    }
+  
+    fetchTasks()
+  }, [groupId])
+
+  useEffect(() => {
+  const fetchUserAndMyTasks = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      // 取得使用者資訊
+      const res = await fetch('http://localhost:5001/auth/whoami', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) return;
+
+      const userData = await res.json();
+      setUser({ username: userData.username, user_id: String(userData.user_id) });
+
+      // 接著取得目前使用者 in_process 任務
+      const taskRes = await fetch('http://localhost:5007/my-tasks', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!taskRes.ok) return;
+
+      const myTaskData = await taskRes.json();
+      console.log('✅ 成功取得 /my-tasks 資料：', myTaskData);
+
+      setUserTasks(
+        myTaskData.map((task: any) => ({
+          id: String(task.task_id),
+          name: task.title,
+          dueDate: task.end_date?.slice(0, 10) || '',
+          currentOwner: '你自己',
+          status: task.status,
+        }))
+      );
+    } catch (err) {
+      console.error('取得使用者或任務失敗', err);
+    }
+  };
+
+  fetchUserAndMyTasks();
+}, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    window.location.href = '/'; // 或用 navigate('/') 如果你有 useNavigate
+  };
 
   return (
     <div className="p-6">
@@ -140,11 +356,14 @@ export default function TaskPage() {
                 U
               </div>
               <div>
-                <p className="text-sm font-semibold">username123</p>
-                <p className="text-xs text-gray-500">ID: 12345</p>
+                <p className="text-sm font-semibold">{user ? user.username : '載入中...'}</p>
+                <p className="text-xs text-gray-500">ID: {user ? user.user_id : ''}</p>
               </div>
             </div>
-            <button className="rounded bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600">
+            <button
+              className="rounded bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600"
+              onClick={handleLogout}
+            >
               登出
             </button>
           </div>
@@ -220,6 +439,17 @@ export default function TaskPage() {
                 <p className="text-xs text-gray-500">截止日期：{task.dueDate}</p>
                 <p className="text-xs text-gray-500">負責人：{task.currentOwner}</p>
                 <p className="text-xs text-gray-500">狀態：{task.status}</p>
+
+                {/* 任務完成按鈕 */}
+                {task.status === 'in_process' && (
+                  <button
+                    onClick={() => handleCompleteTask(Number(task.id))}
+                    className="mt-2 rounded bg-green-500 px-3 py-1 text-xs text-white hover:bg-green-600"
+                  >
+                    完成任務 ✅
+                  </button>
+                )}
+
               </div>
             ))}
           </div>
@@ -260,7 +490,8 @@ export default function TaskPage() {
         <AddTaskModal
           isOpen={isAddTaskModalOpen}
           onClose={() => setAddTaskModalOpen(false)}
-          onAdd={(newTask) => setTasks((prev) => [...prev, newTask])}
+          onAdd={handleCreateTask}
+          groupId = {groupId} 
         />
       )}
     </div>

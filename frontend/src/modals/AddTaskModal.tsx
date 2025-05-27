@@ -13,12 +13,13 @@ interface Props {
   isOpen: boolean
   onClose: () => void
   onAdd: (newTask: Task) => void
+  groupId: string
 }
 
-export default function AddTaskModal({ isOpen, onClose, onAdd }: Props) {
+export default function AddTaskModal({ isOpen, onClose, onAdd, groupId }: Props) {
   const [name, setName] = useState('')
   const [dueDate, setDueDate] = useState('')
-  const groupId = '1' // 群組 ID 固定
+  //const groupId = '1' // 群組 ID 固定
 
   if (!isOpen) return null
 
