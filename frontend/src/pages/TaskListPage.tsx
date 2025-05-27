@@ -4,6 +4,8 @@ import TaskSelectionModal from '../modals/TaskSelectionModal'
 import UpdateTaskModal from '../modals/UpdateTaskModal'
 import AddTaskModal from '../modals/AddTaskModal'
 import { fetchWithAuth } from '../utils/fetchWithAuth'
+import NotificationModal from '../modals/NotificationModal'
+
 
 interface Task {
   id: string
@@ -53,9 +55,101 @@ export default function TaskPage() {
   const [isAddTaskModalOpen, setAddTaskModalOpen] = useState(false)
   // isUpdateTaskModalOpen	控制【更新任務】視窗是否開啟
   const [isUpdateTaskModalOpen, setUpdateTaskModalOpen] = useState(false)
+  // show	控制通知視窗是否顯示
+  const [show, setShow] = useState(false)
+  // notifications通知清單
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   // user	使用者資訊
   const [user, setUser] = useState<{ username: string; user_id: string } | null>(null)
+  const [hasNewNotification, setHasNewNotification] = useState(false);
+  
+
+  const handleReceiveNotification = async () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('請先登入');
+    return;
+  }
+
+  try {
+    const res = await fetch(`http://localhost:5005/groups/${groupId}/notifications`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text);
+    }
+
+    const data = await res.json();
+      setHasNewNotification(true);
+  } catch (err) {
+    console.error('取得通知失敗', err);
+    alert('取得通知時發生錯誤');
+  }
+};
+useEffect(() => {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  const interval = setInterval(async () => {
+    try {
+      const res = await fetch(`http://localhost:5005/groups/${groupId}/notifications`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (data.length > 0) {
+        const latest = data[0].created_at; // e.g. '2025-05-28T02:10:59.123Z'
+        const lastRead = localStorage.getItem('lastReadTime'); // 同樣是 ISO 字串
+
+        console.log('[polling] latest:', latest, '| lastRead:', lastRead);
+
+        if (!lastRead || latest > lastRead) {
+          setHasNewNotification(true);
+          setNotifications(data);
+        }
+      }
+    } catch (err) {
+      console.error('[polling] 發生錯誤：', err);
+    }
+  }, 5000);
+
+  return () => clearInterval(interval);
+}, [groupId]);
+
+
+// ⬇️ 處理點擊鈴鐺（會把紅點移除）
+const handleBellClick = async () => {
+  setShow(!show);
+  if (!show) {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const res = await fetch(`http://localhost:5005/groups/${groupId}/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await res.json();
+      setNotifications(data);
+      setHasNewNotification(false);
+
+      // ✅ 更新已讀時間
+      if (data.length > 0) {
+        const latestTime = data[0].created_at;
+        localStorage.setItem('lastReadTime', latestTime);
+        console.log('[click] 更新 lastReadTime 為:', latestTime);
+      }
+    } catch (err) {
+      console.error('取得通知失敗', err);
+    }
+  }
+};
 
   // 選取任務
   const handleSelectTask = (task: Task) => {
@@ -134,12 +228,18 @@ export default function TaskPage() {
     return;
   }
 
+  const pendingTasks = userTasks.filter(task => task.status ==='pending');
+  if(pendingTasks.length===0){
+	alert(`沒有尚未認領的任務`);
+	return;
+  }
+
   if (!window.confirm('確定要認領任務嗎？')) return;
 
   const successes: string[] = [];
   const failures: string[] = [];
 
-  for (const t of userTasks) {
+  for (const t of pendingTasks) {
     try {
       const res = await fetch('http://localhost:5007/claim', {
         method: 'POST',
@@ -345,12 +445,30 @@ const handleCompleteTask = async (taskId: number) => {
         <h1 className="text-2xl font-bold text-blue-600">TaskManager</h1>
         <div className="flex items-center gap-4">
           {/* 通知按鈕 */}
-          <div className="relative">
-            <button className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300">
-              <span className="text-lg">🔔</span>
-            </button>
-            <span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500"></span>
-          </div>
+		  <div className="relative">
+			 <button
+				onClick={handleBellClick}
+				className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300"
+  >
+				<span className="text-lg">🔔</span>
+				{hasNewNotification && (
+					<span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500"></span>
+				)}
+			 </button>
+
+			{show && (
+				<NotificationModal
+				isOpen={show}
+				onClose={() => setShow(false)}
+				notifications={notifications}
+				onMarkAllRead={() => {
+					setNotifications([]);
+					setHasNewNotification(false);
+				 }}
+				 />
+				)}
+			</div>
+
           {/* 使用者資訊 */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">

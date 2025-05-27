@@ -1,4 +1,6 @@
-from db.model import db, User, UserGroup, Group, Task, Assignment
+from db.model import db, User, UserGroup, Group, Task, Assignment,GroupNotification
+from datetime import datetime
+
 
 # 為了讓外部可以注入 SocketIO 實例（從 app.py 傳入）
 socketio = None
@@ -89,8 +91,10 @@ def create_task(title, status, end_date, group_id):
     task = Task(title=title, status=status, end_date=end_date, group_id=group_id)
     db.session.add(task)
     db.session.commit()
+    create_group_notification(group_id, "新任務", f"任務「{title}」已建立 🎯")
 
     if socketio:
+        print("[SocketIO] Emitting create_task")
         socketio.emit('create_task', {
             "task_id": task.task_id,
             "title": title,
@@ -109,6 +113,7 @@ def update_task(task_id, title=None, status=None, end_date=None):
     task = get_task(task_id)
     if task:
         if title:
+            create_group_notification(task.group_id, "任務更新", f"任務「{title}」名稱已被修改")
             task.title = title
             if socketio:
                 socketio.emit('update_task_title', {
@@ -117,6 +122,7 @@ def update_task(task_id, title=None, status=None, end_date=None):
                     "message": f"任務 {task_id} 名稱變更為 {title}"
                 }, namespace="/")
         if status:
+            create_group_notification(task.group_id, "任務狀態更新", f"任務「{task.title}」狀態更新為「{status}」")
             task.status = status
             if socketio:
                 socketio.emit('update_task_status', {
@@ -125,6 +131,12 @@ def update_task(task_id, title=None, status=None, end_date=None):
                     "message": f"任務 {task_id} 狀態變更為 {status}"
                 },  namespace="/")
         if end_date:
+            if isinstance(end_date, str):
+                try:
+                    end_date = datetime.strptime(end_date, "%Y-%m-%d")
+                except ValueError:
+                    return {"error": "日期格式錯誤"}, 400
+            create_group_notification(task.group_id, "任務截止日期更新", f"任務「{task.title}」截止時間更新為 {end_date.strftime('%Y-%m-%d')}")
             task.end_date = end_date
             if socketio:
                 socketio.emit('update_task_end_date', {
@@ -140,6 +152,7 @@ def delete_task(task_id):
     if task:
         db.session.delete(task)
         db.session.commit()
+        create_group_notification(task.group_id, "任務刪除", f"任務「{task.title}」已被刪除 ❌")
         if socketio:
             socketio.emit('delete_task', {
                 "task_id": task_id,
@@ -171,5 +184,12 @@ def remove_assignment(task_id):
     if assignment:
         db.session.delete(assignment)
         db.session.commit()
-
+#====================
+#通知
+#====================
+def create_group_notification(group_id: int, title: str, content: str):
+    print(f"📝 建立通知：{title} - {content}")
+    notification = GroupNotification(group_id=group_id, title=title, content=content)
+    db.session.add(notification)
+    db.session.commit()
 

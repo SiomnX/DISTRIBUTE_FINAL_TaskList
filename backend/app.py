@@ -1,6 +1,5 @@
 from flask import Flask
 from flask_socketio import SocketIO
-# from backend.db.database import socketio  # 直接用你 database.py 的 socketio 實例
 from backend.db.model import db 
 
 app = Flask(__name__)
