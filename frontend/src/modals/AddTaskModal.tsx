@@ -60,7 +60,7 @@ export default function AddTaskModal({ isOpen, onClose, onAdd, groupId }: Props)
         id: String(data.id), // 假設後端回傳 id
         name: data.title,
         dueDate: data.end_date,
-        currentOwner: groupId,
+        currentOwner: '未指派',
         status: data.status || 'pending',
       }
 

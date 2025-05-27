@@ -14,3 +14,7 @@ venv/
 .vscode/
 .DS_Store
 
+# Node.js junk
+node_modules/
+*.log
+package-lock.json
