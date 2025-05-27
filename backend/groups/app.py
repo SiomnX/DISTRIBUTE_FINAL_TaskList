@@ -7,13 +7,15 @@ from flask_jwt_extended import JWTManager
 
 from groups.config import Config
 from groups.routes.groups import groups_bp
-from db.database import db
+from groups.routes.notification import notification_bp
+from db.database import db,bind_socketio, create_group_notification
 from etcd.etcd_client import register_to_etcd
 from etcd.etcd_config import get_database_url, get_jwt_secret
 
 # 建立並設定好 Flask 應用程式
 def create_app():
     app = Flask(__name__)
+
 
     # 使用 config.py 的設定值作為基礎
     app.config.from_object(Config)
@@ -44,12 +46,12 @@ def create_app():
 
     # 註冊 Blueprint 處理 /auth 路由
     app.register_blueprint(groups_bp, url_prefix="/groups")
+    app.register_blueprint(notification_bp, url_prefix="/groups")
 
     # 根目錄路由（測試用）
     @app.route("/")
     def index():
         return " user_service is running!"
-
     return app
 
 # 如果是用 `python app.py` 執行，則啟動伺服器

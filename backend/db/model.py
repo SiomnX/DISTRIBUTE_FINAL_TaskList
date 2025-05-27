@@ -77,4 +77,15 @@ class Assignment(db.Model):
     # 關聯
     task = db.relationship('Task', back_populates='assignment')
     user = db.relationship('User', back_populates='assignments')
+#群組通知
+class GroupNotification(db.Model):
+    __tablename__ = 'group_notifications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey('groups.group_id'), nullable=False)
+    title = db.Column(db.String(100), nullable=False)  
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    group = db.relationship('Group', backref=db.backref('notifications', cascade='all, delete'))
 
