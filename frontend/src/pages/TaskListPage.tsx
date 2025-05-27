@@ -91,8 +91,6 @@ export default function TaskPage() {
     alert('取得通知時發生錯誤');
   }
 };
-
-
 useEffect(() => {
   const token = localStorage.getItem('token');
   if (!token) return;
@@ -100,23 +98,30 @@ useEffect(() => {
   const interval = setInterval(async () => {
     try {
       const res = await fetch(`http://localhost:5005/groups/${groupId}/notifications`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) return;
-      const data = await res.json();
 
-      // 若通知有增加，就設定紅點
-      if (data.length > notifications.length) {
-        setHasNewNotification(true);
-        setNotifications(data); // ✅ 同步通知列表
+      const data = await res.json();
+      if (data.length > 0) {
+        const latest = data[0].created_at; // e.g. '2025-05-28T02:10:59.123Z'
+        const lastRead = localStorage.getItem('lastReadTime'); // 同樣是 ISO 字串
+
+        console.log('[polling] latest:', latest, '| lastRead:', lastRead);
+
+        if (!lastRead || latest > lastRead) {
+          setHasNewNotification(true);
+          setNotifications(data);
+        }
       }
     } catch (err) {
-      console.error("通知輪詢失敗", err);
+      console.error('[polling] 發生錯誤：', err);
     }
-  }, 5000); // 每 5 秒輪詢一次
+  }, 5000);
 
-  return () => clearInterval(interval); // 離開頁面清除計時器
-}, [groupId, notifications.length]);
+  return () => clearInterval(interval);
+}, [groupId]);
+
 
 // ⬇️ 處理點擊鈴鐺（會把紅點移除）
 const handleBellClick = async () => {
@@ -124,21 +129,27 @@ const handleBellClick = async () => {
   if (!show) {
     const token = localStorage.getItem('token');
     if (!token) return;
+
     try {
       const res = await fetch(`http://localhost:5005/groups/${groupId}/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) return;
+
       const data = await res.json();
       setNotifications(data);
-      setHasNewNotification(false); // ✅ 點開後清除紅點
+      setHasNewNotification(false);
+
+      // ✅ 更新已讀時間
+      if (data.length > 0) {
+        const latestTime = data[0].created_at;
+        localStorage.setItem('lastReadTime', latestTime);
+        console.log('[click] 更新 lastReadTime 為:', latestTime);
+      }
     } catch (err) {
       console.error('取得通知失敗', err);
     }
   }
 };
-
-
 
   // 選取任務
   const handleSelectTask = (task: Task) => {

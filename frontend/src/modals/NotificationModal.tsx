@@ -37,11 +37,6 @@ export default function NotificationModal({ isOpen, onClose, notifications, onMa
       <div className="w-80 bg-white shadow-lg rounded-lg p-4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">通知</h2>
-          {onMarkAllRead && (
-            <button onClick={onMarkAllRead} className="text-sm text-blue-500 hover:underline">
-              全部已讀
-            </button>
-          )}
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg ml-2">×</button>
         </div>
         <div className="space-y-4 max-h-96 overflow-y-auto">

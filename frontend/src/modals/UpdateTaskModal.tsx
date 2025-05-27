@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { FormEvent } from 'react';
+import type { FormEvent } from 'react'
 
 interface Task {
   id: string
@@ -17,69 +17,84 @@ interface Props {
 }
 
 export default function UpdateTaskModal({ isOpen, onClose, task, onUpdate }: Props) {
-  const [name, setName] = useState(task.name)
-  const [dueDate, setDueDate] = useState(task.dueDate)
-  const [currentOwner, setCurrentOwner] = useState(task.currentOwner)
-  const [status, setStatus] = useState(task.status)
+  const [name, setName] = useState('')
+  const [dueDate, setDueDate] = useState('')
+  const [currentOwner, setCurrentOwner] = useState('')
+  const [status, setStatus] = useState('')
+
+  // ✅ 將字串日期標準化成 yyyy-mm-dd
+  const normalizeDate = (d: string) => (d.includes('T') ? d.split('T')[0] : d)
 
   useEffect(() => {
-    setName(task.name)
-    setDueDate(task.dueDate)
-    setCurrentOwner(task.currentOwner)
-    setStatus(task.status)
+    if (task) {
+      setName(task.name)
+      setDueDate(normalizeDate(task.dueDate))
+      setCurrentOwner(task.currentOwner)
+      setStatus(task.status)
+    }
   }, [task])
 
   if (!isOpen) return null
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-  
+
+    const token = localStorage.getItem('token')
+    if (!token) {
+      alert('請先登入')
+      return
+    }
+
+    const trimmedName = name.trim()
+    const trimmedDate = dueDate.trim()
+
+    const updatedData: any = {}
+    const titleChanged = trimmedName !== task.name.trim()
+    const dateChanged = trimmedDate !== normalizeDate(task.dueDate)
+
+    if (titleChanged) updatedData.title = trimmedName
+    if (dateChanged) updatedData.end_date = trimmedDate
+
+    if (!titleChanged && !dateChanged) {
+      alert('你沒有修改任何欄位')
+      return
+    }
+
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        alert('請先登入')
-        return
-      }
-  
       const res = await fetch(`http://localhost:5003/task/${task.id}`, {
-        method: 'PUT', // 如果你後端用 PATCH 就改成 'PATCH'
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          title: name,
-          end_date: dueDate
-        }),
+        body: JSON.stringify(updatedData),
       })
-  
+
       if (!res.ok) {
         const errorText = await res.text()
         console.error('更新任務失敗：', errorText)
         alert(`更新任務失敗：\n${errorText}`)
         return
       }
-  
+
       const data = await res.json()
-  
+
       const updatedTask: Task = {
         ...task,
         name: data.title,
-        dueDate: data.end_date,
+        dueDate: normalizeDate(data.end_date),
         currentOwner: task.currentOwner,
         status: data.status || task.status,
       }
-  
+
       onUpdate(updatedTask)
       onClose()
       alert('更新成功！')
-  
     } catch (err) {
       console.error('更新任務錯誤', err)
       alert('伺服器錯誤，請稍後再試')
     }
   }
-  
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -119,3 +134,4 @@ export default function UpdateTaskModal({ isOpen, onClose, task, onUpdate }: Pro
     </div>
   )
 }
+
