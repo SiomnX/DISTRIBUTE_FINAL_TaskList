@@ -1,4 +1,5 @@
-import { useState, FormEvent } from 'react'
+import { useState } from 'react'
+import type { FormEvent } from 'react';
 
 interface Task {
   id: string
@@ -27,7 +28,7 @@ export default function AddTaskModal({ isOpen, onClose, onAdd }: Props) {
       name,
       dueDate,
       currentOwner: groupId,
-      status: '待處理',
+      status: "pending"
     }
 
     onAdd(newTask)
