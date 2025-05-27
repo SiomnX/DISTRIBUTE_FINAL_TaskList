@@ -24,7 +24,7 @@ export default function GroupCard({ group, onAddMember, onDeleteMember }: GroupC
         <button 
           type="button" 
           className="text-lg font-semibold py-1 rounded hover:bg-gray-300 transition"
-          onClick={() => navigate(`/group/${group.id}`)}
+          onClick={() => navigate(`/groups/${group.id}`)}
         >
           {group.name}
         </button>

@@ -13,9 +13,31 @@ type Group = {
   totalMembers: number;
 };
 
+
+
 export default function GroupPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [userId, setUserId] = useState('');
+
+    // 取得使用者資訊
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const res = await fetchWithAuth('http://localhost:5001/auth/whoami'); // login microservice
+        if (!res.ok) throw new Error('取得使用者資訊失敗');
+        const data = await res.json();
+        setUserName(data.username);
+        setUserId(data.user_id);
+      } catch (err) {
+        console.error('載入使用者資訊失敗', err);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
+
 
   // 🚀 一開始就撈所有群組，然後一個個抓成員
   useEffect(() => {
@@ -210,8 +232,8 @@ export default function GroupPage() {
         <h1 className="text-2xl font-bold text-blue-600">TaskManager</h1>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <div className="text-sm text-gray-800 font-semibold">username123</div>
-            <div className="text-xs text-gray-500">ID: 12345</div>
+			<div className="text-sm text-gray-800 font-semibold">{userName || '載入中...'}</div>
+			<div className="text-xs text-gray-500">ID: {userId || '...'}</div>
           </div>
 		  <button onClick={handleLogout} className="bg-red-500 text-white px-3 py-1 rounded">登出</button>
 		</div>
