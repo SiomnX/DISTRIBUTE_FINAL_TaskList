@@ -86,15 +86,18 @@ def get_tasks_by_group(group_id):
     from db.model import Task
     tasks = Task.query.filter_by(group_id=group_id).all()
 
-    task_list = [
-        {
+    task_list = []
+    for task in tasks:
+        assignment = task.assignment  # 透過 ORM 關聯
+        user = assignment.user if assignment else None
+        task_list.append({
             'id': task.task_id,
             'title': task.title,
             'status': task.status.value,
             'end_date': task.end_date.isoformat() if task.end_date else None,
-            'group_id': task.group_id
-        }
-        for task in tasks
-    ]
+            'group_id': task.group_id,
+            'current_owner_id': user.user_id if user else None,
+            'current_owner_name': user.username if user else '未指派'
+        })
     return jsonify(task_list), 200
 

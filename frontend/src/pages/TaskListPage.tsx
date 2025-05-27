@@ -271,8 +271,8 @@ const handleCompleteTask = async (taskId: number) => {
           data.map((task: any) => ({
             id: String(task.id),
             name: task.title,
-            dueDate: task.end_date?.slice(0, 10) || '', // yyyy-mm-dd
-            currentOwner: '未指派', // 目前後端沒傳這個欄位
+            dueDate: task.end_date?.slice(0, 10) || '',
+            currentOwner: task.current_owner_name || '未指派',
             status: task.status,
           }))
         )        
