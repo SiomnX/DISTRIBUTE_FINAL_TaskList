@@ -3,7 +3,7 @@ import GroupCard from '../components/GroupCard';
 import GroupModal from '../components/GroupModal';
 import { fetchWithAuth } from '../utils/fetchWithAuth'
 import { useNavigate } from 'react-router-dom'
-import DeleteGroupModal from '../components/deleteGroupModal';
+import DeleteGroupModal from '../components/DeleteGroupModal';
 import UpdateGroupModal from '../components/UpdateGroupModal';
 
 type Group = {

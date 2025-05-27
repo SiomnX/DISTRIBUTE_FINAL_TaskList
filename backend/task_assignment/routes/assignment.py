@@ -347,21 +347,33 @@ def complete_task():
         traceback.print_exc()
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
-# NEW: 顯示目前自己 in_process 的任務
+# NEW: 依照 group 分類顯示目前自己 in_process 的任務
 @assignment_bp.route("/my-tasks", methods=["GET"])
 @jwt_required()
 def get_my_tasks():
     user_id = get_jwt_identity()
+    group_id = request.args.get("group_id") 
 
     try:
-        cursor.execute("""
-            SELECT t.task_id, t.title, t.status, t.end_date, t.group_id
-              FROM task t
-              JOIN assignment a ON t.task_id = a.task_id
-             WHERE a.user_id = %s AND t.status = 'in_process';
-        """, (user_id,))
-        tasks = cursor.fetchall()
+        if group_id:
+            cursor.execute("""
+                SELECT t.task_id, t.title, t.status, t.end_date, t.group_id
+                  FROM task t
+                  JOIN assignment a ON t.task_id = a.task_id
+                 WHERE a.user_id = %s
+                   AND t.status = 'in_process'
+                   AND t.group_id = %s;
+            """, (user_id, group_id))
+        else:
+            cursor.execute("""
+                SELECT t.task_id, t.title, t.status, t.end_date, t.group_id
+                  FROM task t
+                  JOIN assignment a ON t.task_id = a.task_id
+                 WHERE a.user_id = %s
+                   AND t.status = 'in_process';
+            """, (user_id,))
 
+        tasks = cursor.fetchall()
         result = [
             {
                 "task_id": row[0],
@@ -371,8 +383,8 @@ def get_my_tasks():
                 "group_id": row[4]
             } for row in tasks
         ]
-
         return jsonify(result), 200
+    
     except Exception as e:
         conn.rollback()
         return jsonify({"error": "Internal error", "details": str(e)}), 500

@@ -11,6 +11,7 @@ interface Task {
   dueDate: string
   currentOwner: string
   status: string
+  groupId?: string // NEW: 新增 group id?(optional)
 }
 // TaskPage() 是這頁的主元件
 export default function TaskPage() {
@@ -304,7 +305,7 @@ const handleCompleteTask = async (taskId: number) => {
       setUser({ username: userData.username, user_id: String(userData.user_id) });
 
       // 接著取得目前使用者 in_process 任務
-      const taskRes = await fetch('http://localhost:5007/my-tasks', {
+      const taskRes = await fetch(`http://localhost:5007/my-tasks?group_id=${groupId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -312,7 +313,7 @@ const handleCompleteTask = async (taskId: number) => {
       if (!taskRes.ok) return;
 
       const myTaskData = await taskRes.json();
-      console.log('✅ 成功取得 /my-tasks 資料：', myTaskData);
+      //console.log('成功取得 /my-tasks 資料：', myTaskData);
 
       setUserTasks(
         myTaskData.map((task: any) => ({
@@ -321,6 +322,7 @@ const handleCompleteTask = async (taskId: number) => {
           dueDate: task.end_date?.slice(0, 10) || '',
           currentOwner: '你自己',
           status: task.status,
+          groupId: String(task.group_id),
         }))
       );
     } catch (err) {
@@ -435,7 +437,10 @@ const handleCompleteTask = async (taskId: number) => {
                 key={task.id}
                 className="rounded border bg-gray-50 p-4 shadow"
               >
-                <h3 className="text-sm font-semibold">{task.name}</h3>
+                <h3 className="text-sm font-bold">{task.name}</h3>
+                <p className="text-sm font-semibold text-gray-500 mt-1">
+                  群組 ID：{task.groupId}
+                </p>
                 <p className="text-xs text-gray-500">截止日期：{task.dueDate}</p>
                 <p className="text-xs text-gray-500">負責人：{task.currentOwner}</p>
                 <p className="text-xs text-gray-500">狀態：{task.status}</p>
