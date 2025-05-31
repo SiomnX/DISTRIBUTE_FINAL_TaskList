@@ -1,4 +1,5 @@
 import os
+from etcd.etcd_config import get_database_url
 
 class Config:
     # 從環境變數中讀取 etcd 的 endpoint，預設為 etcd1、etcd2、etcd3 的 2379 port
@@ -17,4 +18,3 @@ class Config:
 
     # 關閉 SQLAlchemy 的物件變更追蹤功能（節省記憶體用）
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
