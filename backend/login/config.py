@@ -1,5 +1,4 @@
 import os
-from etcd.etcd_config import get_database_url
 
 class Config:
     # 從環境變數中讀取 etcd 的 endpoint，預設為 etcd1、etcd2、etcd3 的 2379 port
@@ -11,10 +10,6 @@ class Config:
     ENV = os.getenv("FLASK_ENV", "production")
 
     # Flask 執行時要使用的 port（預設 5000）
-    PORT = int(os.getenv("FLASK_RUN_PORT", 5000))
+    PORT = int(os.getenv("FLASK_RUN_PORT", 5001))
 
-    SERVICE_NAME = os.getenv("SERVICE_NAME", "register")  # 預設就是 register
-    
-
-    # 關閉 SQLAlchemy 的物件變更追蹤功能（節省記憶體用）
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SERVICE_NAME = os.getenv("SERVICE_NAME", "login")  # 預設就是 register

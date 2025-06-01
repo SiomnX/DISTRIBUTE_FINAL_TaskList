@@ -1,36 +1,46 @@
-from flask import Flask
-from flask_cors import CORS
-from task_list.config import Config
-from db.database import db
-from task_list.routes.task import task_bp
-from etcd.etcd_client import register_to_etcd
-from etcd.etcd_config import get_jwt_secret
-from task_list.jwt_setup import jwt
 import socket
 
-app = Flask(__name__)
-app.config.from_object(Config)
+from flask import Flask
+from flask_cors import CORS
+from flask_socketio import SocketIO
 
-jwt_secret = get_jwt_secret()
-if jwt_secret:
-    app.config["JWT_SECRET_KEY"] = jwt_secret
+from task_list.config import Config
+from task_list.routes.task import task_bp
+from task_list.jwt_setup import jwt
+from db.database import db, bind_socketio
+from etcd.etcd_client import register_to_etcd
+from etcd.etcd_config import get_jwt_secret, get_database_url
 
-db.init_app(app)
-CORS(app)
-jwt.init_app(app)
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
 
-# 註冊 blueprint
-app.register_blueprint(task_bp)
+    app.config['SQLALCHEMY_DATABASE_URI'] = get_database_url()
+    app.config["JWT_SECRET_KEY"] = get_jwt_secret()
 
-# 註冊到 etcd
-def register_service():
-    service_name = "task_list"
-    port = Config.PORT
-    ip = socket.gethostbyname(socket.gethostname())
-    register_to_etcd(service_name=service_name, ip=ip, port=port)
 
-register_service()
+    db.init_app(app)
+    CORS(app)
+    jwt.init_app(app)
+
+    # 初始化 socketio 並綁定
+    socketio = SocketIO(app, cors_allowed_origins="http://localhost:5173")
+    bind_socketio(socketio)  # 傳給 database.py
+
+    # 註冊 blueprint
+    app.register_blueprint(task_bp)
+
+    # 註冊到 etcd
+    with app.app_context():
+        service_name = app.config["SERVICE_NAME"]                     # 從環境變數讀取服務名稱
+        port = app.config["PORT"]                                     # 服務使用的 port
+        ip = socket.gethostbyname(socket.gethostname())               # 自動取得本機 IP（在容器中會是內網 IP）
+
+        # 將服務註冊進 etcd（用於服務發現）
+        register_to_etcd(service_name=service_name, ip=ip, port=port)
+    return app
 
 if __name__ == "__main__":
+    app = create_app()
     app.run(host="0.0.0.0", port=Config.PORT)
 
