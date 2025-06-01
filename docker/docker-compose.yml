@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   register:
     build:
@@ -144,7 +142,7 @@ services:
     image: postgres:15
     environment:
       POSTGRES_USER: user
-      POSTGRES_PASSWORD: newpassword
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: tasklistdb
     ports:
       - "5433:5432"
