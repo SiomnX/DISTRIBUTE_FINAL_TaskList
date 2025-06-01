@@ -10,9 +10,16 @@ FLASK_ENV=development
 
 完成 `.env` 設定後，啟動服務：
 
+專案根目錄下
 ```bash
 cd docker
 docker-compose up --build -d
+```
+專案根目錄下
+```bash
+cd frontend
+npm install
+npm rum dev
 ```
 
 
