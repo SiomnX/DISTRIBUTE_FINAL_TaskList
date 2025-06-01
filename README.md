@@ -19,7 +19,7 @@ docker-compose up --build -d
 ```bash
 cd frontend
 npm install
-npm rum dev
+npm run dev
 ```
 
 
